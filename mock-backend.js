@@ -482,11 +482,10 @@
       const cleanColName = col.name.replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_');
       const filename = `${cleanColName}_${lang}.${fmt.toLowerCase()}`;
 
-      // Build document text content preserving Unicode
-      let docContent = `${col.name}\n`;
-      docContent += `Created by: ${col.userEmail}\n`;
-      docContent += `Created Date: ${col.createdDate}\n`;
-      docContent += `Export Language: ${lang} | Total Songs: ${songsToExport.length}\n`;
+      // Build document text content with Header and Footer structure
+      let docContent = `[HEADER - Right Aligned: Logo]\n`;
+      docContent += `----------------------------------------------------------\n\n`;
+      docContent += `${col.name}\n\n`;
       docContent += `==========================================================\n\n`;
 
       songsToExport.forEach((s, idx) => {
@@ -499,26 +498,50 @@
         docContent += `----------------------------------------------------------\n\n`;
       });
 
+      docContent += `\n----------------------------------------------------------\n`;
+      docContent += `[FOOTER: © omkaarssl                     ${col.name} | Page 1]\n`;
+
       // Encode document to base64
       let mimeType = 'text/plain;charset=utf-8';
       let binaryString = unescape(encodeURIComponent(docContent));
 
       if (fmt === 'DOCX') {
         mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        // HTML wrapper that Word reads natively as a rich document
+        // HTML wrapper with header logo and footer structure
         const htmlDoc = `
           <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
           <head><meta charset='utf-8'><title>${col.name}</title>
-          <style>body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; } h1 { text-align: center; color: #1e293b; } h2 { color: #4338ca; } .meta { text-align: center; color: #64748b; font-style: italic; } .lyrics { white-space: pre-wrap; margin-bottom: 24px; }</style>
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; margin: 30px; }
+            .header-table { width: 100%; border-bottom: 1px solid #cbd5e1; margin-bottom: 24px; padding-bottom: 8px; }
+            .header-logo { text-align: right; }
+            .header-logo img { width: 50px; height: auto; }
+            .collection-title { text-align: center; color: #0f172a; font-size: 24px; font-weight: bold; margin: 16px 0 24px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; }
+            h2 { color: #4338ca; margin-top: 24px; }
+            .lyrics { white-space: pre-wrap; margin-bottom: 24px; font-size: 14px; line-height: 1.8; }
+            .footer-table { width: 100%; border-top: 1px solid #cbd5e1; margin-top: 36px; padding-top: 8px; font-size: 11px; color: #64748b; }
+            .footer-left { text-align: left; }
+            .footer-right { text-align: right; }
+          </style>
           </head>
           <body>
-            <h1>${col.name}</h1>
-            <p class="meta">Created by: ${col.userEmail}<br>Date: ${col.createdDate}<br>Language: ${lang}</p>
-            <hr>
+            <div class="header-table">
+              <div class="header-logo"><img src="data:image/jpeg;base64,${typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : ''}" alt="Logo" style="width:50px;height:auto;" /></div>
+            </div>
+
+            <div class="collection-title">${col.name}</div>
+
             ${songsToExport.map((s, idx) => {
               let l = (lang.toLowerCase() === 'tamil' ? s.tamilLyrics : (lang.toLowerCase() === 'devanagari' ? s.devanagariLyrics : s.englishLyrics)) || '';
-              return `<h2>${idx + 1}. ${s.title}</h2><div class="lyrics">${l.replace(/\n/g, '<br>')}</div><hr>`;
+              return `<h2>${idx + 1}. ${s.title}</h2><div class="lyrics">${l.replace(/\n/g, '<br>')}</div><hr style="border:none; border-top:1px solid #e2e8f0;">`;
             }).join('')}
+
+            <table class="footer-table">
+              <tr>
+                <td class="footer-left">© omkaarssl </td>
+                <td class="footer-right">${col.name} | Page 1</td>
+              </tr>
+            </table>
           </body></html>
         `;
         binaryString = unescape(encodeURIComponent(htmlDoc));
