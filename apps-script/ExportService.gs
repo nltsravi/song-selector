@@ -133,7 +133,15 @@ var ExportService = {
 
       // Page header / Title
       var titlePara = body.appendParagraph(collection.name);
-      titlePara.setHeading(DocumentApp.ParagraphHeading.TITLE);
+      try {
+        if (DocumentApp.ParagraphHeading && DocumentApp.ParagraphHeading.TITLE) {
+          titlePara.setHeading(DocumentApp.ParagraphHeading.TITLE);
+        } else {
+          titlePara.setFontSize(20).setBold(true);
+        }
+      } catch (headingErr) {
+        titlePara.setFontSize(20).setBold(true);
+      }
       titlePara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
 
       var metaPara = body.appendParagraph(
@@ -152,7 +160,15 @@ var ExportService = {
         var curSong = songsToExport[sIdx];
 
         var songHeading = body.appendParagraph((sIdx + 1) + '. ' + curSong.title);
-        songHeading.setHeading(DocumentApp.ParagraphHeading.HEADING_2);
+        try {
+          if (DocumentApp.ParagraphHeading && DocumentApp.ParagraphHeading.HEADING2) {
+            songHeading.setHeading(DocumentApp.ParagraphHeading.HEADING2);
+          } else {
+            songHeading.setFontSize(14).setBold(true);
+          }
+        } catch (hErr) {
+          songHeading.setFontSize(14).setBold(true);
+        }
 
         var lyricsPara = body.appendParagraph(curSong.lyrics);
         lyricsPara.setLineSpacing(1.15);
