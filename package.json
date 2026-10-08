@@ -5,7 +5,12 @@
   "scripts": {
     "dev": "python3 -m http.server 3000 --directory public",
     "start": "python3 -m http.server 3000 --directory public",
-    "test": "node tests/test-backend.js"
+    "test": "node tests/test-backend.js",
+    "deploy": "node deploy.js deploy",
+    "push": "node deploy.js push",
+    "status": "node deploy.js status",
+    "login": "node deploy.js login",
+    "open": "node deploy.js open"
   },
   "keywords": [
     "google-apps-script",

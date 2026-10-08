@@ -110,13 +110,34 @@ The top **Google Auth Simulator** bar allows testing:
 
 ---
 
-## Deploying to Google Sites
+---
 
-For complete deployment instructions, see the [`DEPLOYMENT_GUIDE.md`](file:///Users/ravij/AntiGravityProjects/song-selector/docs/DEPLOYMENT_GUIDE.md):
+## Direct Automated Deployment to Google Apps Script
 
-1. **Google Sheet**: Create sheet and run `populateSampleSongsAndStructure()` in Apps Script.
-2. **Apps Script**: Copy files from `apps-script/` into your project, configure `SPREADSHEET_ID`, and deploy as Web App (`Execute as: User accessing`, `Who has access: Anyone with Google account`).
-3. **Google Sites**: Insert Web App URL via **Insert > Embed > By URL** and publish.
+You can deploy directly from your local terminal:
+
+1. **Configure Secrets**:
+   Copy `.env.example` to `.env` (or edit `.env`):
+   ```bash
+   SCRIPT_ID=your_script_id_here
+   SPREADSHEET_ID=your_spreadsheet_id_here
+   ```
+2. **Deploy**:
+   ```bash
+   # Push code and deploy a new Web App version:
+   npm run deploy
+
+   # Push files without publishing a new version:
+   npm run push
+
+   # Check active deployments and Web App URL:
+   npm run status
+
+   # Open project in Apps Script editor:
+   npm run open
+   ```
+
+For detailed manual and Google Sites embedding instructions, see [`DEPLOYMENT_GUIDE.md`](file:///Users/ravij/AntiGravityProjects/song-selector/docs/DEPLOYMENT_GUIDE.md).
 
 ---
 

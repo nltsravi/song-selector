@@ -1,0 +1,5 @@
+# Ignore everything except Apps Script source files
+**/**
+!appsscript.json
+!*.gs
+!*.html

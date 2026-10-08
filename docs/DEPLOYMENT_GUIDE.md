@@ -79,6 +79,37 @@ You can import the CSV templates provided in `docs/`:
 
 ## 2. Google Apps Script Deployment
 
+### Option A: Direct Automated Deployment via CLI (Recommended)
+
+You can push and deploy all files directly from the `apps-script/` folder using the included deployment script:
+
+1. **Configure Secrets in `.env`**:
+   Copy `.env.example` to `.env` (or edit `.env`):
+   ```bash
+   # In .env:
+   SCRIPT_ID=your_script_id_here
+   SPREADSHEET_ID=your_spreadsheet_id_here
+   ```
+   *To find your `SCRIPT_ID`*: Open your Google Sheet -> **Extensions** -> **Apps Script** -> ⚙️ **Project Settings** -> Copy **Script ID**.
+
+2. **Deploy to Google Apps Script**:
+   ```bash
+   # Push files and deploy new Web App version:
+   npm run deploy
+
+   # Or push files directly without publishing a new version:
+   npm run push
+
+   # Check active deployments and Web App URL:
+   npm run status
+   ```
+
+*(If prompted to authenticate or if you see "User has not enabled the Google Apps Script API", enable it at [https://script.google.com/home/usersettings](https://script.google.com/home/usersettings) and run `npm run login`)*.
+
+---
+
+### Option B: Manual Setup via Apps Script Editor
+
 ### Step 2.1: Open Apps Script Project
 In your Google Sheet, click **Extensions > Apps Script** (or create a standalone Apps Script project at [script.google.com](https://script.google.com)).
 
