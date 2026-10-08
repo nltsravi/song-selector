@@ -16,7 +16,22 @@ var ExportService = {
   ],
 
   /**
-   * Validates collection songs against requested language (Section 25)
+   * Helper to retrieve logo image blob from embedded base64 in Logo.gs
+   */
+  getLogoBlob: function() {
+    try {
+      if (typeof LOGO_IMAGE_BASE64 !== 'undefined' && LOGO_IMAGE_BASE64) {
+        var bytes = Utilities.base64Decode(LOGO_IMAGE_BASE64);
+        var mime = (typeof LOGO_IMAGE_MIME !== 'undefined' && LOGO_IMAGE_MIME) ? LOGO_IMAGE_MIME : 'image/jpeg';
+        return Utilities.newBlob(bytes, mime, 'omkaar-ssl-logo.jpeg');
+      }
+    } catch (e) {
+      Logger.log('Could not decode logo blob: ' + e);
+    }
+    return null;
+  },
+
+  /**
    * Detects any missing lyrics before export.
    */
   validateLyricsAvailability: function(collectionId, language) {
@@ -128,29 +143,76 @@ var ExportService = {
     docFile.moveTo(exportFolder);
 
     try {
+      // 1. Setup Header with Logo on the right and horizontal rule below
+      var header = doc.addHeader();
+      header.clear();
+
+      var headerPara = header.appendParagraph('');
+      headerPara.setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
+      headerPara.setSpacingAfter(4);
+
+      var logoBlob = this.getLogoBlob();
+      if (logoBlob) {
+        try {
+          var inlineImg = headerPara.appendInlineImage(logoBlob);
+          inlineImg.setWidth(50);
+          inlineImg.setHeight(39);
+        } catch (imgErr) {
+          Logger.log('Error adding logo to header: ' + imgErr);
+        }
+      }
+
+      // Horizontal line below logo in the header
+      header.appendHorizontalRule();
+
+      // 2. Setup Footer with horizontal rule, copyright on left, collection name and page on right
+      var footer = doc.addFooter();
+      footer.clear();
+
+      // Horizontal line above copyright info and page number
+      footer.appendHorizontalRule();
+
+      var footerTable = footer.appendTable([
+        ['© omkaarssl ', collection.name + ' | Page 1']
+      ]);
+      footerTable.setBorderWidth(0);
+
+      try {
+        footerTable.setColumnWidth(0, 234);
+        footerTable.setColumnWidth(1, 234);
+
+        var cellLeft = footerTable.getCell(0, 0);
+        var cellRight = footerTable.getCell(0, 1);
+
+        var pLeft = cellLeft.getChild(0).asParagraph();
+        pLeft.setAlignment(DocumentApp.HorizontalAlignment.LEFT);
+        pLeft.setFontSize(9);
+        pLeft.setForegroundColor('#64748b');
+
+        var pRight = cellRight.getChild(0).asParagraph();
+        pRight.setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
+        pRight.setFontSize(9);
+        pRight.setForegroundColor('#64748b');
+      } catch (tableErr) {
+        Logger.log('Error formatting footer table: ' + tableErr);
+      }
+
+      // 3. Document Body (First page: Collection Name only below header; removed created by, date, count, language)
       var body = doc.getBody();
       body.clear();
 
-      // Page header / Title
       var titlePara = body.appendParagraph(collection.name);
       try {
         if (DocumentApp.ParagraphHeading && DocumentApp.ParagraphHeading.TITLE) {
           titlePara.setHeading(DocumentApp.ParagraphHeading.TITLE);
         } else {
-          titlePara.setFontSize(20).setBold(true);
+          titlePara.setFontSize(22).setBold(true);
         }
       } catch (headingErr) {
-        titlePara.setFontSize(20).setBold(true);
+        titlePara.setFontSize(22).setBold(true);
       }
       titlePara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-
-      var metaPara = body.appendParagraph(
-        'Created by: ' + collection.userEmail + '\n' +
-        'Created Date: ' + collection.createdDate + '\n' +
-        'Export Language: ' + validLang + ' | Total Songs: ' + songsToExport.length
-      );
-      metaPara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-      metaPara.setItalic(true);
+      titlePara.setSpacingAfter(12);
 
       body.appendHorizontalRule();
       body.appendParagraph('');
