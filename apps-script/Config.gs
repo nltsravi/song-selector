@@ -4,7 +4,7 @@
  */
 const CONFIG = {
   // Spreadsheet ID: Can be set here or in Script Properties ('SPREADSHEET_ID')
-  SPREADSHEET_ID: 'YOUR_SPREADSHEET_ID_HERE',
+  SPREADSHEET_ID: '1fnXOKgH3jBPabwpod7-kCdZNa30_RD65a-4k4f9-xGw',
 
   // Sheet names
   SONGS_SHEET: 'Songs',
