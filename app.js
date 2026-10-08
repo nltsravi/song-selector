@@ -398,9 +398,9 @@ function renderSongs() {
       <div class="song-card ${isSelected ? 'selected' : ''}" id="song-card-${escapeHtml(song.id)}">
         <div>
           <div class="song-header-row">
-            <label class="custom-checkbox-label" title="Select song">
-              <input type="checkbox" class="custom-checkbox-input" id="check-${escapeHtml(song.id)}" ${isSelected ? 'checked' : ''} onchange="toggleSongSelection('${escapeHtml(song.id)}')">
-              <span class="custom-checkbox-box">
+            <label class="custom-checkbox-label" title="Select song" aria-label="Select song ${escapeHtml(song.title)}">
+              <input type="checkbox" class="custom-checkbox-input" id="check-${escapeHtml(song.id)}" ${isSelected ? 'checked' : ''} onchange="toggleSongSelection('${escapeHtml(song.id)}')" aria-label="Select song ${escapeHtml(song.title)}">
+              <span class="custom-checkbox-box" aria-hidden="true">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
               </span>
             </label>
@@ -408,7 +408,7 @@ function renderSongs() {
               <span class="song-id-badge">${escapeHtml(song.id)}</span>
               <h3 class="song-title">${escapeHtml(song.title)}</h3>
               
-              <div class="lang-availability">
+              <div class="lang-availability" role="group" aria-label="Available languages">
                 <span class="lang-pill tamil ${song.hasTamil ? '' : 'unavailable'}" title="${song.hasTamil ? 'Tamil lyrics available' : 'No Tamil lyrics'}">TA</span>
                 <span class="lang-pill english ${song.hasEnglish ? '' : 'unavailable'}" title="${song.hasEnglish ? 'English lyrics available' : 'No English lyrics'}">EN</span>
                 <span class="lang-pill devanagari ${song.hasDevanagari ? '' : 'unavailable'}" title="${song.hasDevanagari ? 'Devanagari lyrics available' : 'No Devanagari lyrics'}">HI</span>
@@ -416,22 +416,22 @@ function renderSongs() {
             </div>
           </div>
 
-          <div class="song-tags-container">
+          <div class="song-tags-container" role="group" aria-label="Tags for ${escapeHtml(song.title)}">
             ${tagBadges}
-            <button class="btn-add-tag-inline" onclick="openTagEditor('${escapeHtml(song.id)}')" title="Edit tags">
-              <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-              Tags
+            <button class="btn-add-tag-inline" onclick="openTagEditor('${escapeHtml(song.id)}')" title="Edit tags" aria-label="Add or edit tags for ${escapeHtml(song.title)}">
+              <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+              + Tags
             </button>
           </div>
         </div>
 
         <div class="song-card-actions">
-          <button class="btn-secondary-action" onclick="openLyricsPreview('${escapeHtml(song.id)}')">
-            <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          <button class="btn-secondary-action" onclick="openLyricsPreview('${escapeHtml(song.id)}')" aria-label="View lyrics for ${escapeHtml(song.title)}">
+            <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
             View Lyrics
           </button>
-          <button class="btn-secondary-action" onclick="openTagEditor('${escapeHtml(song.id)}')">
-            <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+          <button class="btn-secondary-action" onclick="openTagEditor('${escapeHtml(song.id)}')" aria-label="Edit tags for ${escapeHtml(song.title)}">
+            <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
             Edit Tags
           </button>
         </div>
@@ -705,9 +705,9 @@ function renderCreateCollectionSongList() {
         <span class="ordered-song-title">${escapeHtml(song.title)}</span>
         
         <div class="ordered-song-order-actions">
-          <button class="btn-order-move" onclick="moveCreateSongOrder(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up">↑</button>
-          <button class="btn-order-move" onclick="moveCreateSongOrder(${idx}, 1)" ${idx === state.createCollectionSongs.length - 1 ? 'disabled' : ''} title="Move Down">↓</button>
-          <button class="btn-order-remove" onclick="removeCreateSong(${idx})" title="Remove from collection">✕</button>
+          <button class="btn-order-move" onclick="moveCreateSongOrder(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" aria-label="Move ${escapeHtml(song.title)} up">↑</button>
+          <button class="btn-order-move" onclick="moveCreateSongOrder(${idx}, 1)" ${idx === state.createCollectionSongs.length - 1 ? 'disabled' : ''} title="Move Down" aria-label="Move ${escapeHtml(song.title)} down">↓</button>
+          <button class="btn-order-remove" onclick="removeCreateSong(${idx})" title="Remove from collection" aria-label="Remove ${escapeHtml(song.title)} from collection">✕</button>
         </div>
       </div>
     `;
@@ -876,9 +876,9 @@ function renderOpenCollectionSongs() {
         <span class="ordered-song-title">${escapeHtml(song.title)}</span>
         
         <div class="ordered-song-order-actions">
-          <button class="btn-order-move" onclick="moveOpenCollectionOrder(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up">↑</button>
-          <button class="btn-order-move" onclick="moveOpenCollectionOrder(${idx}, 1)" ${idx === collection.songs.length - 1 ? 'disabled' : ''} title="Move Down">↓</button>
-          <button class="btn-order-remove" onclick="removeOpenCollectionSong(${idx})" title="Remove song">✕</button>
+          <button class="btn-order-move" onclick="moveOpenCollectionOrder(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" aria-label="Move ${escapeHtml(song.title)} up">↑</button>
+          <button class="btn-order-move" onclick="moveOpenCollectionOrder(${idx}, 1)" ${idx === collection.songs.length - 1 ? 'disabled' : ''} title="Move Down" aria-label="Move ${escapeHtml(song.title)} down">↓</button>
+          <button class="btn-order-remove" onclick="removeOpenCollectionSong(${idx})" title="Remove song" aria-label="Remove ${escapeHtml(song.title)} from collection">✕</button>
         </div>
       </div>
     `;
@@ -974,11 +974,13 @@ window.setExportLanguage = async function(lang) {
   state.exportModalData.language = lang;
 
   document.querySelectorAll('.lang-radio-card').forEach(card => {
-    if (card.dataset.lang === lang) {
+    const isActive = card.dataset.lang === lang;
+    if (isActive) {
       card.classList.add('active');
     } else {
       card.classList.remove('active');
     }
+    card.setAttribute('aria-checked', isActive ? 'true' : 'false');
   });
 
   await validateExportLanguage();
@@ -989,11 +991,13 @@ window.setExportFormat = function(fmt) {
   state.exportModalData.format = fmt;
 
   document.querySelectorAll('.format-radio-card').forEach(card => {
-    if (card.dataset.format === fmt) {
+    const isActive = card.dataset.format === fmt;
+    if (isActive) {
       card.classList.add('active');
     } else {
       card.classList.remove('active');
     }
+    card.setAttribute('aria-checked', isActive ? 'true' : 'false');
   });
 
   const exportBtn = document.getElementById('btn-execute-export');
@@ -1116,12 +1120,16 @@ window.switchTab = function(tabName) {
   state.activeTab = tabName;
   if (tabName === 'library') {
     elements.tabLibrary.classList.add('active');
+    elements.tabLibrary.setAttribute('aria-selected', 'true');
     elements.tabCollections.classList.remove('active');
+    elements.tabCollections.setAttribute('aria-selected', 'false');
     elements.viewLibrary.style.display = 'block';
     elements.viewCollections.style.display = 'none';
   } else {
     elements.tabLibrary.classList.remove('active');
+    elements.tabLibrary.setAttribute('aria-selected', 'false');
     elements.tabCollections.classList.add('active');
+    elements.tabCollections.setAttribute('aria-selected', 'true');
     elements.viewLibrary.style.display = 'none';
     elements.viewCollections.style.display = 'block';
     loadCollections();
@@ -1129,11 +1137,20 @@ window.switchTab = function(tabName) {
 };
 
 /**
- * Modal Management
+ * Modal Management with Accessibility Focus Restoration
  */
+let lastFocusedElement = null;
+
 function openModal(id) {
+  lastFocusedElement = document.activeElement;
   const modal = document.getElementById(id);
-  if (modal) modal.classList.add('active');
+  if (modal) {
+    modal.classList.add('active');
+    const firstInteractive = modal.querySelector('input:not([type="hidden"]), button.btn-primary-action, .lyrics-content-area');
+    if (firstInteractive) {
+      setTimeout(() => firstInteractive.focus(), 60);
+    }
+  }
   document.body.style.overflow = 'hidden';
 }
 
@@ -1141,6 +1158,9 @@ window.closeModal = function(id) {
   const modal = document.getElementById(id);
   if (modal) modal.classList.remove('active');
   document.body.style.overflow = '';
+  if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+    lastFocusedElement.focus();
+  }
 };
 
 /**
