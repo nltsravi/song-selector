@@ -18,7 +18,7 @@ function doGet(e) {
 
   // Critical for Google Sites embedding (Section 54)
   output.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-  output.addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+  output.addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover');
 
   return output;
 }

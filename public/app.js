@@ -135,11 +135,52 @@ function escapeHtml(str) {
 }
 
 /**
+ * Google Sites iframe embed responsiveness & height adapter
+ */
+function checkEmbeddedMode() {
+  try {
+    const isEmbedded = window.self !== window.top;
+    if (isEmbedded) {
+      document.documentElement.classList.add('is-embedded');
+      document.body.classList.add('is-embedded');
+    }
+  } catch (e) {
+    document.documentElement.classList.add('is-embedded');
+    document.body.classList.add('is-embedded');
+  }
+}
+
+function adjustEmbedHeight() {
+  try {
+    const mainEl = document.getElementById('app-main-content');
+    const containerEl = document.querySelector('.app-container');
+    const contentHeight = Math.max(
+      document.body.scrollHeight || 0,
+      document.documentElement.scrollHeight || 0,
+      mainEl ? mainEl.scrollHeight + 160 : 0,
+      containerEl ? containerEl.scrollHeight + 60 : 0,
+      600
+    );
+
+    // 1. Google Apps Script host setHeight API (when embedded in Google Sites)
+    if (typeof google !== 'undefined' && google.script && google.script.host && typeof google.script.host.setHeight === 'function') {
+      google.script.host.setHeight(contentHeight);
+    }
+    // 2. PostMessage for HTML iframe embeds
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'SET_HEIGHT', height: contentHeight }, '*');
+    }
+  } catch (err) {}
+}
+
+/**
  * Initialize Application
  */
 async function initApp() {
+  checkEmbeddedMode();
   setupEventListeners();
   await checkAuthentication();
+  setTimeout(adjustEmbedHeight, 300);
 }
 
 /**
@@ -441,6 +482,7 @@ function renderSongs() {
 
   elements.songsGrid.innerHTML = html;
   updateSelectionActionBar();
+  adjustEmbedHeight();
 }
 
 /**
@@ -841,6 +883,7 @@ function renderCollections() {
   });
 
   elements.collectionsGrid.innerHTML = html;
+  adjustEmbedHeight();
 }
 
 /**
@@ -1134,6 +1177,7 @@ window.switchTab = function(tabName) {
     elements.viewCollections.style.display = 'block';
     loadCollections();
   }
+  setTimeout(adjustEmbedHeight, 60);
 };
 
 /**
@@ -1146,10 +1190,13 @@ function openModal(id) {
   const modal = document.getElementById(id);
   if (modal) {
     modal.classList.add('active');
+    // In iframe or mobile view, scroll to ensure modal is in visible viewport
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     const firstInteractive = modal.querySelector('input:not([type="hidden"]), button.btn-primary-action, .lyrics-content-area');
     if (firstInteractive) {
       setTimeout(() => firstInteractive.focus(), 60);
     }
+    setTimeout(adjustEmbedHeight, 100);
   }
   document.body.style.overflow = 'hidden';
 }
@@ -1161,6 +1208,7 @@ window.closeModal = function(id) {
   if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
     lastFocusedElement.focus();
   }
+  setTimeout(adjustEmbedHeight, 80);
 };
 
 /**
@@ -1184,6 +1232,7 @@ function setupEventListeners() {
     if (e.key === 'Escape') {
       document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
       document.body.style.overflow = '';
+      setTimeout(adjustEmbedHeight, 80);
     }
   });
 
@@ -1192,9 +1241,26 @@ function setupEventListeners() {
       if (e.target === overlay) {
         overlay.classList.remove('active');
         document.body.style.overflow = '';
+        setTimeout(adjustEmbedHeight, 80);
       }
     });
   });
+
+  // Handle window resizing and mobile orientation changes
+  window.addEventListener('resize', adjustEmbedHeight);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(adjustEmbedHeight, 200);
+  });
+
+  // Observe content/DOM changes to dynamically adapt height in Google Sites
+  if (typeof ResizeObserver !== 'undefined' && document.body) {
+    let roTimer = null;
+    const ro = new ResizeObserver(() => {
+      if (roTimer) clearTimeout(roTimer);
+      roTimer = setTimeout(adjustEmbedHeight, 80);
+    });
+    ro.observe(document.body);
+  }
 }
 
 // Start application when DOM is ready
