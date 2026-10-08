@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Song Collection & Lyrics Library - Google Sites App</title>
+  
+  <!-- Modern Google Fonts with full Tamil and Devanagari Unicode support -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* Simulation Bar for Testing Authentication Scenarios */
+    .sim-bar {
+      background: #090d16;
+      border-bottom: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 0.45rem 1rem;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      z-index: 9999;
+      position: relative;
+    }
+    .sim-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .sim-select {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #475569;
+      border-radius: 4px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.75rem;
+      outline: none;
+    }
+  </style>
+
+  <!-- Load Styles from apps-script/styles.html content -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Simulation Bar for Testing Auth & Domain Requirements (Section 4, 6) -->
+  <div class="sim-bar" id="sim-bar">
+    <div style="display:flex; align-items:center; gap:0.5rem;">
+      <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981;"></span>
+      <strong>Google Auth Simulator:</strong>
+      <span>Simulate user login state for verification</span>
+    </div>
+    <div class="sim-controls">
+      <label for="sim-user-select" style="font-size:0.75rem;">Auth Mode:</label>
+      <select id="sim-user-select" class="sim-select" onchange="window.MockBackend.setSimulatedUser(this.value)">
+        <option value="logged_in_gmail">Logged In (user@example.com)</option>
+        <option value="logged_in_tirwin">Workspace Domain (sarah@tirwin.in)</option>
+        <option value="unauthorized_domain">Unauthorized Domain (outsider@otherdomain.com)</option>
+        <option value="unauthenticated">Unauthenticated (Sign-in Required)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Ambient background glow effects -->
+  <div class="gradient-ambient"></div>
+  <div class="gradient-ambient-2"></div>
+
+  <div class="app-container">
+    <!-- Main Application Header (Section 3) -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon">
+          <!-- Musical note library icon -->
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12 0c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Song Collection & Lyrics Library</h1>
+          <p>Search songs, create collections, add tags, and export lyrics.</p>
+        </div>
+      </div>
+
+      <!-- Authenticated User Badge (Section 5) -->
+      <div class="user-badge" id="user-badge" style="display: none;">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <span class="user-email-text" id="user-email-text">user@example.com</span>
+        <span class="user-status-pill" id="user-status-pill">Verified</span>
+      </div>
+    </header>
+
+    <!-- Authentication Required Hero Screen (Section 4) -->
+    <div class="auth-hero-container" id="auth-hero" style="display: none;">
+      <div class="auth-card">
+        <div class="auth-card-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
+        </div>
+        <h2>Sign in required</h2>
+        <p id="auth-error-message">Please sign in with your Google account to access the Song Collection & Lyrics Library.</p>
+        
+        <button type="button" class="btn-google-signin" id="btn-google-login" onclick="window.MockBackend.setSimulatedUser('logged_in_gmail')">
+          <!-- Google G Logo -->
+          <svg style="width:18px;height:18px;" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          Sign in with Google
+        </button>
+        <div class="domain-note">Google Accounts (@gmail.com & Google Workspace) supported</div>
+      </div>
+    </div>
+
+    <!-- Main Application Interface (Section 10, 18, 30) -->
+    <main id="app-main-content">
+      <!-- Navigation Tabs -->
+      <nav class="app-tabs">
+        <button class="tab-btn active" id="tab-btn-library" onclick="switchTab('library')">
+          <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+          Song Library
+          <span class="tab-count" id="songs-count-badge">0</span>
+        </button>
+        <button class="tab-btn" id="tab-btn-collections" onclick="switchTab('collections')">
+          <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
+          My Collections
+          <span class="tab-count" id="collections-count-badge">0</span>
+        </button>
+      </nav>
+
+      <!-- View 1: Song Library (Section 10, 11, 12) -->
+      <section id="view-library">
+        <!-- Search & Filter Toolbar -->
+        <div class="toolbar-card">
+          <div class="search-row">
+            <div class="search-input-wrapper">
+              <span class="search-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              </span>
+              <input type="text" id="search-songs-input" class="search-input" placeholder="Search by title, tags, or song ID (Tamil, English, Hindi)..." autocomplete="off">
+              <button class="search-clear-btn" id="search-clear-btn" onclick="clearFilters()" title="Clear search">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+
+            <div style="display:flex; gap:0.5rem;">
+              <button class="btn-secondary-action" onclick="selectAllVisibleSongs()" title="Select all filtered songs">
+                Select All
+              </button>
+              <button class="btn-secondary-action" onclick="clearSelection()" title="Deselect all">
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Tag Filter Pills -->
+          <div class="quick-tag-filters" id="quick-tag-filters"></div>
+        </div>
+
+        <!-- Songs Grid -->
+        <div class="songs-grid" id="songs-grid"></div>
+      </section>
+
+      <!-- View 2: My Collections (Section 18) -->
+      <section id="view-collections" style="display: none;">
+        <div class="collections-grid" id="collections-grid"></div>
+      </section>
+    </main>
+
+    <!-- Sticky Floating Action Bar for Selected Songs (Section 12, 14) -->
+    <div class="selection-action-bar" id="selection-action-bar">
+      <div class="selection-badge">
+        <svg style="width:18px;height:18px;color:#34d399;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+        <span id="selected-count-text">Selected: 0 songs</span>
+      </div>
+      <button class="btn-primary-action" id="btn-open-create-collection" onclick="openCreateCollectionModal()">
+        <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        Create Collection
+      </button>
+      <button class="btn-clear-selection" id="btn-clear-selection" onclick="clearSelection()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Modal 1: Lyrics Preview (Section 13) -->
+  <div class="modal-overlay" id="modal-lyrics">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3 id="modal-lyrics-title">Song Title</h3>
+        <button class="btn-modal-close" onclick="closeModal('modal-lyrics')" title="Close">
+          <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="lyrics-lang-tabs" id="lyrics-tabs-container"></div>
+        <div class="lyrics-content-area" id="lyrics-content-area"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary-action" onclick="copyCurrentLyrics()">
+          <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+          Copy Lyrics
+        </button>
+        <button class="btn-primary-action" onclick="closeModal('modal-lyrics')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Edit Song Tags (Section 8, 9) -->
+  <div class="modal-overlay" id="modal-tags">
+    <div class="modal-window" style="max-width: 520px;">
+      <div class="modal-header">
+        <div>
+          <h3>Edit Song Tags</h3>
+          <span style="font-size:0.85rem; color:var(--text-muted);" id="modal-tags-song-title">Song Title</span>
+        </div>
+        <button class="btn-modal-close" onclick="closeModal('modal-tags')" title="Close">
+          <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <label style="font-size:0.85rem; color:var(--text-dim); font-weight:600; margin-bottom:0.4rem; display:block;">CURRENT TAGS</label>
+        <div class="tag-chips-editor" id="tag-chips-container"></div>
+
+        <label style="font-size:0.85rem; color:var(--text-dim); font-weight:600; margin-bottom:0.4rem; display:block;">ADD TAG</label>
+        <div class="tag-input-row">
+          <input type="text" id="tag-new-input" class="input-styled" placeholder="Type tag name and press Enter..." onkeydown="if(event.key==='Enter'){event.preventDefault(); addTagChipFromInput();}">
+          <button class="btn-primary-action" type="button" onclick="addTagChipFromInput()">+ Add</button>
+        </div>
+        <p style="font-size:0.8rem; color:var(--text-dim);">Changes will update the Tags column in Google Sheets.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary-action" onclick="closeModal('modal-tags')">Cancel</button>
+        <button class="btn-primary-action" id="btn-save-tags" onclick="saveSongTags()">Save Tags</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Create Collection (Section 14, 15, 20) -->
+  <div class="modal-overlay" id="modal-create-collection">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div>
+          <h3>Create New Collection</h3>
+          <span style="font-size:0.85rem; color:var(--text-muted);" id="collection-count-indicator">Songs selected: 0</span>
+        </div>
+        <button class="btn-modal-close" onclick="closeModal('modal-create-collection')" title="Close">
+          <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 1.25rem;">
+          <label for="collection-name-input" style="font-size:0.85rem; color:var(--text-muted); font-weight:600; margin-bottom:0.4rem; display:block;">COLLECTION NAME</label>
+          <input type="text" id="collection-name-input" class="input-styled" placeholder="e.g. Morning Worship Collection" maxlength="100">
+        </div>
+
+        <label style="font-size:0.85rem; color:var(--text-muted); font-weight:600; margin-bottom:0.5rem; display:block;">SELECTED SONGS (REORDER OR REMOVE)</label>
+        <div class="ordered-song-list" id="create-collection-song-list"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary-action" onclick="closeModal('modal-create-collection')">Cancel</button>
+        <button class="btn-primary-action" id="btn-save-new-collection" onclick="saveNewCollection()">Create Collection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Open Collection & Manager (Section 19, 20) -->
+  <div class="modal-overlay" id="modal-open-collection">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div>
+          <h3 id="modal-collection-name">Collection Name</h3>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.2rem;">
+            <span id="modal-collection-creator">user@example.com</span> • <span id="modal-collection-time"></span>
+          </div>
+        </div>
+        <button class="btn-modal-close" onclick="closeModal('modal-open-collection')" title="Close">
+          <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+          <span style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">SONGS IN COLLECTION (<span id="open-collection-count">0</span>)</span>
+        </div>
+        <div class="ordered-song-list" id="open-collection-song-list"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary-action" onclick="closeModal('modal-open-collection')">Close</button>
+        <button class="btn-secondary-action" onclick="openExportModal(state.activeCollection.collectionId)">
+          <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          Export
+        </button>
+        <button class="btn-primary-action" id="btn-save-collection-changes" onclick="saveOpenCollectionChanges()">Save Order Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 5: Export Collection (Section 21 - 28) -->
+  <div class="modal-overlay" id="modal-export">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div>
+          <h3>Export Collection</h3>
+          <span style="font-size:0.85rem; color:var(--text-muted);" id="export-modal-collection-name">Collection Name</span>
+        </div>
+        <button class="btn-modal-close" onclick="closeModal('modal-export')" title="Close">
+          <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Language Selection (Section 21, 22, 23, 24) -->
+        <div class="export-option-group">
+          <div class="export-group-title">1. Select Lyrics Language</div>
+          <div class="export-radio-cards">
+            <div class="export-radio-card lang-radio-card active" data-lang="Tamil" onclick="setExportLanguage('Tamil')">
+              <h4>Tamil</h4>
+              <span>தமிழ் வரிகள்</span>
+            </div>
+            <div class="export-radio-card lang-radio-card" data-lang="English" onclick="setExportLanguage('English')">
+              <h4>English</h4>
+              <span>English Lyrics</span>
+            </div>
+            <div class="export-radio-card lang-radio-card" data-lang="Devanagari" onclick="setExportLanguage('Devanagari')">
+              <h4>Devanagari</h4>
+              <span>देवनागरी गीत</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Format Selection (Section 21, 26, 27) -->
+        <div class="export-option-group">
+          <div class="export-group-title">2. Select Document Format</div>
+          <div class="export-radio-cards">
+            <div class="export-radio-card format-radio-card active" data-format="PDF" onclick="setExportFormat('PDF')">
+              <svg style="width:24px;height:24px;color:#f43f5e;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+              <h4>PDF</h4>
+              <span>Printable document</span>
+            </div>
+            <div class="export-radio-card format-radio-card" data-format="DOCX" onclick="setExportFormat('DOCX')">
+              <svg style="width:24px;height:24px;color:#0ea5e9;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              <h4>DOCX</h4>
+              <span>Editable Word doc</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Missing Lyrics Alert Container (Section 25) -->
+        <div id="export-missing-warning-container"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary-action" onclick="closeModal('modal-export')">Cancel</button>
+        <button class="btn-primary-action" id="btn-execute-export" onclick="executeExport()">Export PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Load Mock Backend & Client Logic -->
+  <script src="mock-backend.js"></script>
+  <script src="app.js"></script>
+
+  <script>
+    // Sync dropdown with active simulated user
+    document.addEventListener('DOMContentLoaded', () => {
+      const simSelect = document.getElementById('sim-user-select');
+      if (simSelect && window.MockBackend) {
+        const u = window.MockBackend.getSimulatedUser();
+        if (!u.isAuthenticated) simSelect.value = 'unauthenticated';
+        else if (u.isDomainAllowed === false) simSelect.value = 'unauthorized_domain';
+        else if (u.domain === 'tirwin.in') simSelect.value = 'logged_in_tirwin';
+        else simSelect.value = 'logged_in_gmail';
+      }
+    });
+  </script>
+</body>
+</html>

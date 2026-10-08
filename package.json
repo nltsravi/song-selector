@@ -1,0 +1,20 @@
+{
+  "name": "song-selector",
+  "version": "1.0.0",
+  "description": "Google Sites Song Collection & Lyrics Export Application",
+  "scripts": {
+    "dev": "python3 -m http.server 3000 --directory public",
+    "start": "python3 -m http.server 3000 --directory public",
+    "test": "node tests/test-backend.js"
+  },
+  "keywords": [
+    "google-apps-script",
+    "google-sites",
+    "song-library",
+    "lyrics-export",
+    "tamil",
+    "devanagari"
+  ],
+  "author": "Ravishankar Jayaraman",
+  "license": "MIT"
+}
