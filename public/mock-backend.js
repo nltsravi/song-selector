@@ -485,16 +485,16 @@
       // Build document text content with Header and Footer structure
       let docContent = `[HEADER - Right Aligned: Logo (0.5" x 0.5", 50% Opacity)]\n`;
       docContent += `----------------------------------------------------------\n\n`;
-      docContent += `[WATERMARK - Center of Page: omkaarssl logo, Full Size, 50% Opacity]\n\n`;
+      docContent += `[WATERMARK - Center of Page: omkaarssl logo, Full Size, Light Opacity (15%)]\n\n`;
       docContent += `${col.name}\n\n`;
 
-      songsToExport.forEach((s, idx) => {
+      songsToExport.forEach((s) => {
         let lyrics = '';
         if (lang.toLowerCase() === 'tamil') lyrics = s.tamilLyrics;
         else if (lang.toLowerCase() === 'devanagari') lyrics = s.devanagariLyrics;
         else lyrics = s.englishLyrics;
 
-        docContent += `${idx + 1}. ${s.title}\n\n${lyrics}\n\n`;
+        docContent += `${s.title}\n\n${lyrics}\n\n`;
       });
 
       docContent += `\n----------------------------------------------------------\n`;
@@ -505,6 +505,7 @@
       let binaryString = unescape(encodeURIComponent(docContent));
 
       const logoBase64 = typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : '';
+      const watermarkBase64 = typeof LOGO_IMAGE_WATERMARK_BASE64 !== 'undefined' ? LOGO_IMAGE_WATERMARK_BASE64 : logoBase64;
 
       if (fmt === 'DOCX') {
         mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -518,8 +519,8 @@
             .header-table { width: 100%; border-bottom: 1px solid #cbd5e1; margin-bottom: 24px; padding-bottom: 8px; }
             .header-logo { text-align: right; }
             .header-logo img { width: 0.5in; height: 0.5in; opacity: 0.5; object-fit: contain; }
-            .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); opacity: 0.5; z-index: -1000; pointer-events: none; text-align: center; width: 80%; max-width: 600px; }
-            .watermark img { width: 100%; height: auto; opacity: 0.5; display: block; margin: 0 auto; }
+            .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); opacity: 0.15; z-index: -1000; pointer-events: none; text-align: center; width: 80%; max-width: 600px; }
+            .watermark img { width: 100%; height: auto; opacity: 0.15; display: block; margin: 0 auto; }
             .collection-title { text-align: center; color: #0f172a; font-size: 24px; font-weight: bold; margin: 16px 0 24px 0; }
             h2 { color: #4338ca; margin-top: 24px; }
             .lyrics { white-space: pre-wrap; margin-bottom: 24px; font-size: 14px; line-height: 1.8; }
@@ -529,9 +530,9 @@
           </style>
           </head>
           <body>
-            <!-- Center of page full-size watermark with opacity 50% -->
+            <!-- Center of page full-size watermark with light opacity (15%) -->
             <div class="watermark">
-              <img src="data:image/png;base64,${logoBase64}" alt="Watermark" />
+              <img src="data:image/png;base64,${watermarkBase64}" alt="Watermark" />
             </div>
 
             <!-- Header with 0.5in x 0.5in logo with opacity 50% and horizontal rule below -->
@@ -541,9 +542,9 @@
 
             <div class="collection-title">${col.name}</div>
 
-            ${songsToExport.map((s, idx) => {
+            ${songsToExport.map((s) => {
               let l = (lang.toLowerCase() === 'tamil' ? s.tamilLyrics : (lang.toLowerCase() === 'devanagari' ? s.devanagariLyrics : s.englishLyrics)) || '';
-              return `<h2>${idx + 1}. ${s.title}</h2><div class="lyrics">${l.replace(/\n/g, '<br>')}</div><div style="margin-bottom:24px;"></div>`;
+              return `<h2>${s.title}</h2><div class="lyrics">${l.replace(/\n/g, '<br>')}</div><div style="margin-bottom:24px;"></div>`;
             }).join('')}
 
             <!-- Footer with horizontal rule above -->

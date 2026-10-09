@@ -36,11 +36,14 @@ var ExportService = {
   },
 
   /**
-   * Helper to retrieve watermark image blob (50% opacity) from embedded base64 in Logo.gs
+   * Helper to retrieve watermark image blob (15% light opacity) from embedded base64 in Logo.gs
    */
   getWatermarkBlob: function() {
     try {
-      if (typeof LOGO_IMAGE_50_BASE64 !== 'undefined' && LOGO_IMAGE_50_BASE64) {
+      if (typeof LOGO_IMAGE_WATERMARK_BASE64 !== 'undefined' && LOGO_IMAGE_WATERMARK_BASE64) {
+        var bytes = Utilities.base64Decode(LOGO_IMAGE_WATERMARK_BASE64);
+        return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-watermark-light.png');
+      } else if (typeof LOGO_IMAGE_50_BASE64 !== 'undefined' && LOGO_IMAGE_50_BASE64) {
         var bytes = Utilities.base64Decode(LOGO_IMAGE_50_BASE64);
         return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-logo-watermark.png');
       } else if (typeof LOGO_IMAGE_BASE64 !== 'undefined' && LOGO_IMAGE_BASE64) {
@@ -224,29 +227,39 @@ var ExportService = {
       var body = doc.getBody();
       body.clear();
 
-      // Add watermark: Center of the page, image full size, 50% opacity
+      // Add watermark: Center of the page, image full size, light opacity (15%)
       var watermarkBlob = this.getWatermarkBlob();
       if (watermarkBlob) {
         try {
-          var wmPara = body.appendParagraph('');
-          var posImg = wmPara.addPositionedImage(watermarkBlob);
-
           var pageWidth = body.getPageWidth() || 612;
           var pageHeight = body.getPageHeight() || 792;
           var marginLeft = body.getMarginLeft() || 72;
           var marginTop = body.getMarginTop() || 72;
 
-          var fullWidth = pageWidth - (marginLeft * 2); // 468 pt (6.5 inches)
-          var fullHeight = Math.round(fullWidth / 1.2818); // ~365 pt (5.07 inches)
+          // Target dimensions on PDF page in points:
+          // Full printable width is 468 pt (6.5 inches)
+          var targetWidthPt = pageWidth - (marginLeft * 2); // 468 pt
+          var targetHeightPt = Math.round(targetWidthPt / 1.2818); // ~365 pt
 
-          posImg.setWidth(fullWidth);
-          posImg.setHeight(fullHeight);
+          // Symmetrical center on page:
+          var targetLeftPt = Math.round((pageWidth - targetWidthPt) / 2); // 72 pt
+          var targetTopPt = Math.round((pageHeight - targetHeightPt) / 2); // 213.5 pt
 
-          var leftOffset = Math.round((pageWidth - fullWidth) / 2) - marginLeft;
-          var topOffset = Math.round((pageHeight - fullHeight) / 2) - marginTop;
+          var leftOffsetPt = targetLeftPt - marginLeft; // 0 pt
+          var topOffsetPt = targetTopPt - marginTop; // 141.5 pt
 
-          posImg.setLeftOffset(leftOffset);
-          posImg.setTopOffset(topOffset);
+          // In Google Docs DocumentApp, PositionedImage dimensions and offsets are in 96-DPI pixels.
+          // Google Docs scales pixels by 72/96 (0.75) when exporting to PDF.
+          // Multiply points by 96/72 (4/3) to produce exact points and perfect centering in exported PDF.
+          var ptToPx = 96 / 72;
+
+          var wmPara = body.getParagraphs()[0] || body.appendParagraph('');
+          var posImg = wmPara.addPositionedImage(watermarkBlob);
+
+          posImg.setWidth(Math.round(targetWidthPt * ptToPx));
+          posImg.setHeight(Math.round(targetHeightPt * ptToPx));
+          posImg.setLeftOffset(Math.round(leftOffsetPt * ptToPx));
+          posImg.setTopOffset(Math.round(topOffsetPt * ptToPx));
           posImg.setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT);
         } catch (wmErr) {
           Logger.log('Error adding watermark image: ' + wmErr);
@@ -273,7 +286,8 @@ var ExportService = {
       for (var sIdx = 0; sIdx < songsToExport.length; sIdx++) {
         var curSong = songsToExport[sIdx];
 
-        var songHeading = body.appendParagraph((sIdx + 1) + '. ' + curSong.title);
+        // Song title without numbering
+        var songHeading = body.appendParagraph(curSong.title);
         try {
           if (DocumentApp.ParagraphHeading && DocumentApp.ParagraphHeading.HEADING2) {
             songHeading.setHeading(DocumentApp.ParagraphHeading.HEADING2);
