@@ -485,7 +485,7 @@
       // Build document text content with Header and Footer structure
       let docContent = `[HEADER - Left Aligned: Logo (0.54" x 0.5", 90% Opacity, 20% Brightness)]\n`;
       docContent += `----------------------------------------------------------\n\n`;
-      docContent += `[WATERMARK - Center of Page: omkaarssl logo, Full Size, 25% Opacity, 0% Brightness & Contrast]\n\n`;
+      docContent += `[WATERMARK - Center of Page: OmkaarSSL logo, Full Size, 25% Opacity, 0% Brightness & Contrast]\n\n`;
       docContent += `${col.name}\n\n`;
 
       songsToExport.forEach((s) => {
@@ -498,7 +498,7 @@
       });
 
       docContent += `\n----------------------------------------------------------\n`;
-      docContent += `[FOOTER: © omkaarssl                     ${col.name} | Page 1]\n`;
+      docContent += `[FOOTER: © OmkaarSSL                     ${col.name}]\n`;
 
       // Encode document to base64
       let mimeType = 'text/plain;charset=utf-8';
@@ -520,7 +520,7 @@
             .header-logo { text-align: left; }
             .header-logo img { width: 0.54in; height: 0.5in; opacity: 0.9; object-fit: contain; filter: brightness(1.2); }
             .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); opacity: 0.25; z-index: -1000; pointer-events: none; text-align: center; width: 80%; max-width: 600px; }
-            .watermark img { width: 100%; height: auto; opacity: 0.25; display: block; margin: 0 auto; filter: brightness(1.0) contrast(1.0); }
+            .watermark img { width: 100%; height: auto; opacity: 1; display: block; margin: 0 auto; filter: brightness(1.0) contrast(1.0); }
             .collection-title { text-align: center; color: #0f172a; font-size: 24px; font-weight: bold; margin: 16px 0 24px 0; }
             h2 { color: #4338ca; margin-top: 24px; }
             .lyrics { white-space: pre-wrap; margin-bottom: 24px; font-size: 14px; line-height: 1.8; }
@@ -550,8 +550,8 @@
             <!-- Footer with horizontal rule above -->
             <table class="footer-table">
               <tr>
-                <td class="footer-left">© omkaarssl </td>
-                <td class="footer-right">${col.name} | Page 1</td>
+                <td class="footer-left">© OmkaarSSL</td>
+                <td class="footer-right">${col.name}</td>
               </tr>
             </table>
           </body></html>
