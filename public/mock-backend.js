@@ -485,7 +485,8 @@
       // Build document text content with Header and Footer structure
       let docContent = `[HEADER - Left Aligned: Logo (0.54" x 0.5", 90% Opacity, 20% Brightness)]\n`;
       docContent += `----------------------------------------------------------\n\n`;
-      docContent += `[WATERMARK - Center of Page: OmkaarSSL logo, Full Size, 25% Opacity, 0% Brightness & Contrast]\n\n`;
+      // Watermark commented out for now
+      // docContent += `[WATERMARK - Center of Page: OmkaarSSL logo, Full Size, 25% Opacity, 0% Brightness & Contrast]\n\n`;
       docContent += `${col.name}\n\n`;
 
       songsToExport.forEach((s) => {
@@ -530,10 +531,11 @@
           </style>
           </head>
           <body>
-            <!-- Center of page full-size watermark with opacity 25%, brightness & contrast 0% -->
+            <!-- Watermark commented out for now
             <div class="watermark">
               <img src="data:image/png;base64,${watermarkBase64}" alt="Watermark" />
             </div>
+            -->
 
             <!-- Header with 0.54in x 0.5in logo on the left with opacity 90%, brightness 20%, and horizontal rule below -->
             <div class="header-table">

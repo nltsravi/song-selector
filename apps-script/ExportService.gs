@@ -227,7 +227,8 @@ var ExportService = {
       var body = doc.getBody();
       body.clear();
 
-      // Add watermark: Center of the page, image full size, opacity 25%
+      // Watermark addition commented out for now
+      /*
       var watermarkBlob = this.getWatermarkBlob();
       if (watermarkBlob) {
         try {
@@ -265,6 +266,7 @@ var ExportService = {
           Logger.log('Error adding watermark image: ' + wmErr);
         }
       }
+      */
 
       var titlePara = body.appendParagraph(collection.name);
       try {
