@@ -483,9 +483,9 @@
       const filename = `${cleanColName}_${lang}.${fmt.toLowerCase()}`;
 
       // Build document text content with Header and Footer structure
-      let docContent = `[HEADER - Right Aligned: Logo (0.5" x 0.5", 50% Opacity)]\n`;
+      let docContent = `[HEADER - Left Aligned: Logo (0.54" x 0.5", 90% Opacity, 20% Brightness)]\n`;
       docContent += `----------------------------------------------------------\n\n`;
-      docContent += `[WATERMARK - Center of Page: omkaarssl logo, Full Size, Light Opacity (15%)]\n\n`;
+      docContent += `[WATERMARK - Center of Page: omkaarssl logo, Full Size, 25% Opacity, 0% Brightness & Contrast]\n\n`;
       docContent += `${col.name}\n\n`;
 
       songsToExport.forEach((s) => {
@@ -504,8 +504,8 @@
       let mimeType = 'text/plain;charset=utf-8';
       let binaryString = unescape(encodeURIComponent(docContent));
 
-      const logoBase64 = typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : '';
-      const watermarkBase64 = typeof LOGO_IMAGE_WATERMARK_BASE64 !== 'undefined' ? LOGO_IMAGE_WATERMARK_BASE64 : logoBase64;
+      const headerLogoBase64 = typeof LOGO_HEADER_BASE64 !== 'undefined' ? LOGO_HEADER_BASE64 : (typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : '');
+      const watermarkBase64 = typeof LOGO_IMAGE_WATERMARK_BASE64 !== 'undefined' ? LOGO_IMAGE_WATERMARK_BASE64 : (typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : '');
 
       if (fmt === 'DOCX') {
         mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -517,10 +517,10 @@
             @page { margin: 1in; }
             body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; margin: 30px; position: relative; }
             .header-table { width: 100%; border-bottom: 1px solid #cbd5e1; margin-bottom: 24px; padding-bottom: 8px; }
-            .header-logo { text-align: right; }
-            .header-logo img { width: 0.5in; height: 0.5in; opacity: 0.5; object-fit: contain; }
-            .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); opacity: 0.15; z-index: -1000; pointer-events: none; text-align: center; width: 80%; max-width: 600px; }
-            .watermark img { width: 100%; height: auto; opacity: 0.15; display: block; margin: 0 auto; }
+            .header-logo { text-align: left; }
+            .header-logo img { width: 0.54in; height: 0.5in; opacity: 0.9; object-fit: contain; filter: brightness(1.2); }
+            .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); opacity: 0.25; z-index: -1000; pointer-events: none; text-align: center; width: 80%; max-width: 600px; }
+            .watermark img { width: 100%; height: auto; opacity: 0.25; display: block; margin: 0 auto; filter: brightness(1.0) contrast(1.0); }
             .collection-title { text-align: center; color: #0f172a; font-size: 24px; font-weight: bold; margin: 16px 0 24px 0; }
             h2 { color: #4338ca; margin-top: 24px; }
             .lyrics { white-space: pre-wrap; margin-bottom: 24px; font-size: 14px; line-height: 1.8; }
@@ -530,14 +530,14 @@
           </style>
           </head>
           <body>
-            <!-- Center of page full-size watermark with light opacity (15%) -->
+            <!-- Center of page full-size watermark with opacity 25%, brightness & contrast 0% -->
             <div class="watermark">
               <img src="data:image/png;base64,${watermarkBase64}" alt="Watermark" />
             </div>
 
-            <!-- Header with 0.5in x 0.5in logo with opacity 50% and horizontal rule below -->
+            <!-- Header with 0.54in x 0.5in logo on the left with opacity 90%, brightness 20%, and horizontal rule below -->
             <div class="header-table">
-              <div class="header-logo"><img src="data:image/png;base64,${logoBase64}" alt="Logo" style="width:0.5in;height:0.5in;opacity:0.5;object-fit:contain;" /></div>
+              <div class="header-logo"><img src="data:image/png;base64,${headerLogoBase64}" alt="Logo" style="width:0.54in;height:0.5in;opacity:0.9;object-fit:contain;filter:brightness(1.2);" /></div>
             </div>
 
             <div class="collection-title">${col.name}</div>
