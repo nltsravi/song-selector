@@ -17,16 +17,38 @@ var ExportService = {
 
   /**
    * Helper to retrieve logo image blob from embedded base64 in Logo.gs
+   * Uses 50% opacity transparent PNG so header image renders at 50% opacity
    */
   getLogoBlob: function() {
     try {
-      if (typeof LOGO_IMAGE_BASE64 !== 'undefined' && LOGO_IMAGE_BASE64) {
+      if (typeof LOGO_IMAGE_50_BASE64 !== 'undefined' && LOGO_IMAGE_50_BASE64) {
+        var bytes = Utilities.base64Decode(LOGO_IMAGE_50_BASE64);
+        return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-logo-header.png');
+      } else if (typeof LOGO_IMAGE_BASE64 !== 'undefined' && LOGO_IMAGE_BASE64) {
         var bytes = Utilities.base64Decode(LOGO_IMAGE_BASE64);
-        var mime = (typeof LOGO_IMAGE_MIME !== 'undefined' && LOGO_IMAGE_MIME) ? LOGO_IMAGE_MIME : 'image/jpeg';
-        return Utilities.newBlob(bytes, mime, 'omkaar-ssl-logo.jpeg');
+        var mime = (typeof LOGO_IMAGE_MIME !== 'undefined' && LOGO_IMAGE_MIME) ? LOGO_IMAGE_MIME : 'image/png';
+        return Utilities.newBlob(bytes, mime, 'omkaarssl-logo-header.png');
       }
     } catch (e) {
       Logger.log('Could not decode logo blob: ' + e);
+    }
+    return null;
+  },
+
+  /**
+   * Helper to retrieve watermark image blob (50% opacity) from embedded base64 in Logo.gs
+   */
+  getWatermarkBlob: function() {
+    try {
+      if (typeof LOGO_IMAGE_50_BASE64 !== 'undefined' && LOGO_IMAGE_50_BASE64) {
+        var bytes = Utilities.base64Decode(LOGO_IMAGE_50_BASE64);
+        return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-logo-watermark.png');
+      } else if (typeof LOGO_IMAGE_BASE64 !== 'undefined' && LOGO_IMAGE_BASE64) {
+        var bytes = Utilities.base64Decode(LOGO_IMAGE_BASE64);
+        return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-logo-watermark.png');
+      }
+    } catch (e) {
+      Logger.log('Could not decode watermark blob: ' + e);
     }
     return null;
   },
@@ -155,8 +177,9 @@ var ExportService = {
       if (logoBlob) {
         try {
           var inlineImg = headerPara.appendInlineImage(logoBlob);
-          inlineImg.setWidth(50);
-          inlineImg.setHeight(39);
+          // 0.5 inches width and height = 36 points (72 pt/in * 0.5)
+          inlineImg.setWidth(36);
+          inlineImg.setHeight(36);
         } catch (imgErr) {
           Logger.log('Error adding logo to header: ' + imgErr);
         }
@@ -201,6 +224,35 @@ var ExportService = {
       var body = doc.getBody();
       body.clear();
 
+      // Add watermark: Center of the page, image full size, 50% opacity
+      var watermarkBlob = this.getWatermarkBlob();
+      if (watermarkBlob) {
+        try {
+          var wmPara = body.appendParagraph('');
+          var posImg = wmPara.addPositionedImage(watermarkBlob);
+
+          var pageWidth = body.getPageWidth() || 612;
+          var pageHeight = body.getPageHeight() || 792;
+          var marginLeft = body.getMarginLeft() || 72;
+          var marginTop = body.getMarginTop() || 72;
+
+          var fullWidth = pageWidth - (marginLeft * 2); // 468 pt (6.5 inches)
+          var fullHeight = Math.round(fullWidth / 1.2818); // ~365 pt (5.07 inches)
+
+          posImg.setWidth(fullWidth);
+          posImg.setHeight(fullHeight);
+
+          var leftOffset = Math.round((pageWidth - fullWidth) / 2) - marginLeft;
+          var topOffset = Math.round((pageHeight - fullHeight) / 2) - marginTop;
+
+          posImg.setLeftOffset(leftOffset);
+          posImg.setTopOffset(topOffset);
+          posImg.setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT);
+        } catch (wmErr) {
+          Logger.log('Error adding watermark image: ' + wmErr);
+        }
+      }
+
       var titlePara = body.appendParagraph(collection.name);
       try {
         if (DocumentApp.ParagraphHeading && DocumentApp.ParagraphHeading.TITLE) {
@@ -214,7 +266,7 @@ var ExportService = {
       titlePara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
       titlePara.setSpacingAfter(12);
 
-      body.appendHorizontalRule();
+      // (Horizontal rule below title removed)
       body.appendParagraph('');
 
       // Add each song with preserved order (Section 20, 26, 27)
@@ -236,7 +288,7 @@ var ExportService = {
         lyricsPara.setLineSpacing(1.15);
 
         if (sIdx < songsToExport.length - 1) {
-          body.appendHorizontalRule();
+          // (Horizontal rule between songs removed)
           body.appendParagraph('');
         }
       }
