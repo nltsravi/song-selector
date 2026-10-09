@@ -17,11 +17,14 @@ var ExportService = {
 
   /**
    * Helper to retrieve logo image blob from embedded base64 in Logo.gs
-   * Uses 50% opacity transparent PNG so header image renders at 50% opacity
+   * Header logo: 0.54in x 0.5in, opacity 90%, brightness 20%
    */
   getLogoBlob: function() {
     try {
-      if (typeof LOGO_IMAGE_50_BASE64 !== 'undefined' && LOGO_IMAGE_50_BASE64) {
+      if (typeof LOGO_HEADER_BASE64 !== 'undefined' && LOGO_HEADER_BASE64) {
+        var bytes = Utilities.base64Decode(LOGO_HEADER_BASE64);
+        return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-logo-header.png');
+      } else if (typeof LOGO_IMAGE_50_BASE64 !== 'undefined' && LOGO_IMAGE_50_BASE64) {
         var bytes = Utilities.base64Decode(LOGO_IMAGE_50_BASE64);
         return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-logo-header.png');
       } else if (typeof LOGO_IMAGE_BASE64 !== 'undefined' && LOGO_IMAGE_BASE64) {
@@ -36,19 +39,16 @@ var ExportService = {
   },
 
   /**
-   * Helper to retrieve watermark image blob (15% light opacity) from embedded base64 in Logo.gs
+   * Helper to retrieve watermark image blob (25% opacity, brightness & contrast 0%) from embedded base64 in Logo.gs
    */
   getWatermarkBlob: function() {
     try {
       if (typeof LOGO_IMAGE_WATERMARK_BASE64 !== 'undefined' && LOGO_IMAGE_WATERMARK_BASE64) {
         var bytes = Utilities.base64Decode(LOGO_IMAGE_WATERMARK_BASE64);
-        return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-watermark-light.png');
-      } else if (typeof LOGO_IMAGE_50_BASE64 !== 'undefined' && LOGO_IMAGE_50_BASE64) {
-        var bytes = Utilities.base64Decode(LOGO_IMAGE_50_BASE64);
-        return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-logo-watermark.png');
+        return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-watermark.png');
       } else if (typeof LOGO_IMAGE_BASE64 !== 'undefined' && LOGO_IMAGE_BASE64) {
         var bytes = Utilities.base64Decode(LOGO_IMAGE_BASE64);
-        return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-logo-watermark.png');
+        return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-watermark.png');
       }
     } catch (e) {
       Logger.log('Could not decode watermark blob: ' + e);
@@ -173,15 +173,15 @@ var ExportService = {
       header.clear();
 
       var headerPara = header.appendParagraph('');
-      headerPara.setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
+      headerPara.setAlignment(DocumentApp.HorizontalAlignment.LEFT);
       headerPara.setSpacingAfter(4);
 
       var logoBlob = this.getLogoBlob();
       if (logoBlob) {
         try {
           var inlineImg = headerPara.appendInlineImage(logoBlob);
-          // 0.5 inches width and height = 36 points (72 pt/in * 0.5)
-          inlineImg.setWidth(36);
+          // 0.54 inches width = 39 points (0.54 * 72), 0.5 inches height = 36 points (0.5 * 72)
+          inlineImg.setWidth(39);
           inlineImg.setHeight(36);
         } catch (imgErr) {
           Logger.log('Error adding logo to header: ' + imgErr);
