@@ -140,6 +140,23 @@ assert.strictEqual(userCols.length, 2);
 assert.strictEqual(userCols.some(c => c.userEmail === 'other@example.com'), false);
 console.log('✓ Strict ownership filtering verified.');
 
+// Test 6: Export Footer & Watermark Configuration
+console.log('\nTest 6: Export Footer & Watermark Configuration');
+const fs = require('fs');
+const exportServiceCode = fs.readFileSync('apps-script/ExportService.gs', 'utf8');
+const mockBackendCode = fs.readFileSync('public/mock-backend.js', 'utf8');
+
+// Assert footer has © OmkaarSSL and no Page 1
+assert(exportServiceCode.includes("['© OmkaarSSL', collection.name]"), 'ExportService must have © OmkaarSSL and collection name in footer');
+assert(!exportServiceCode.includes("Page 1"), 'ExportService must not include Page 1 in footer');
+
+assert(mockBackendCode.includes('<td class="footer-left">© OmkaarSSL</td>'), 'mock-backend must have © OmkaarSSL in footer left');
+assert(mockBackendCode.includes('<td class="footer-right">${col.name}</td>'), 'mock-backend must have ${col.name} in footer right');
+assert(!mockBackendCode.includes('${col.name} | Page 1'), 'mock-backend must not have | Page 1');
+
+console.log('✓ Export footer format verified: "© OmkaarSSL" on left and collection name on right with no page text.');
+
 console.log('\n========================================');
-console.log('ALL TESTS PASSED SUCCESSFULLY! (5/5)');
+console.log('ALL TESTS PASSED SUCCESSFULLY! (6/6)');
 console.log('========================================\n');
+

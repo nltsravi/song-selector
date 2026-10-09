@@ -191,15 +191,15 @@ var ExportService = {
       // Horizontal line below logo in the header
       header.appendHorizontalRule();
 
-      // 2. Setup Footer with horizontal rule, copyright on left, collection name and page on right
+      // 2. Setup Footer with horizontal rule, copyright on left, collection name on right
       var footer = doc.addFooter();
       footer.clear();
 
-      // Horizontal line above copyright info and page number
+      // Horizontal line above copyright info
       footer.appendHorizontalRule();
 
       var footerTable = footer.appendTable([
-        ['© omkaarssl ', collection.name + ' | Page 1']
+        ['© OmkaarSSL', collection.name]
       ]);
       footerTable.setBorderWidth(0);
 
@@ -227,7 +227,7 @@ var ExportService = {
       var body = doc.getBody();
       body.clear();
 
-      // Add watermark: Center of the page, image full size, light opacity (15%)
+      // Add watermark: Center of the page, image full size, opacity 25%
       var watermarkBlob = this.getWatermarkBlob();
       if (watermarkBlob) {
         try {
