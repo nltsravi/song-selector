@@ -1,4 +1,4 @@
-Song ID,Song Title,Tamil Lyrics,English Lyrics,Devanagari Lyrics,Tags,Category,Active,Updated At,Updated By
+Song ID,Song Title,Tamil Lyrics,English Lyrics,Devanagari Lyrics,Tags,Category,Image URL,Audio URL,Video URL,Active,Updated At,Updated By
 S001,Morning Worship (காலை ஆராதனை),"காலை நேரம் உம் பாதம் வந்தேன்
 கர்த்தாவே உம் கிருபையைத் தந்தருளும்
 புது நாளின் தொடக்கத்தில் உம்மைப் பாடுவேன்
@@ -26,7 +26,7 @@ Great is Your faithfulness, O Lord!","सुबह सवेरे तेरे 
 हाल्लेलूयाह हम तेरी स्तुति करेंगे
 सदा सर्वदा तेरा गुणगान करेंगे
 तेरी दया हर सुबह नई होती है
-तेरी सच्चाई कितनी महान है!","Morning, Worship, Praise",Worship,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
+तेरी सच्चाई कितनी महान है!","Morning, Worship, Praise",Worship,https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=600&auto=format&fit=crop,https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3,https://www.youtube.com/watch?v=dQw4w9WgXcQ,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
 S002,Prayer for Peace (சமாதானத்தின் பாடல்),"சமாதானம் தரும் தேவ மைந்தனே
 என் உள்ளத்தில் அமைதி அருளுமே
 புயல் வீசும் காலத்திலும் காப்பவரே
@@ -54,7 +54,7 @@ Forever in You I shall dwell!","शांति के राजकुमार,
 तेरी मधुर आवाज़ शांति लाती है
 हर डर दूर होता है और दिल गाता है
 जो हाथ मुझे संभालता है वह तेरा ही हाथ है
-सदा तेरे साथ मैं रहूँगा!","Prayer, Peace, Comfort",Prayer,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
+सदा तेरे साथ मैं रहूँगा!","Prayer, Peace, Comfort",Prayer,https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=600&auto=format&fit=crop,https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3,,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
 S003,Thanksgiving & Gratitude (நன்றி நிறைந்த உள்ளத்தோடு),"நன்றி நிறைந்த உள்ளத்தோடு
 உம் வாசஸ்தலம் பிரவேசிப்பேன்
 செய்த நன்மைகள் ஆயிரம் நினைத்தே
@@ -82,7 +82,7 @@ Singing with all my strength and soul!","धन्यवाद से भरे 
 धन्यवाद प्रभु यीशु, धन्यवाद मेरे स्वामी
 जीवन भर मैं तेरा धन्यवाद करूँगा
 जब तक मुझमें सांस है स्तुति करूँगा
-अपने पूरे सामर्थ्य से गाऊँगा!","Thanksgiving, Praise, Joy",Praise,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
+अपने पूरे सामर्थ्य से गाऊँगा!","Thanksgiving, Praise, Joy",Praise,,,https://www.youtube.com/watch?v=kJQP7kiw5Fk,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
 S004,Children of Light (வெளிச்சத்தின் பிள்ளைகள்),"சின்னஞ்சிறு மலர்கள் நாங்கள்
 இயேசுவின் நேச பிள்ளைகள்
 உலகில் ஒளியாய் பிரகாசிப்போம்
@@ -110,7 +110,7 @@ Guide our steps, our loving Father!","हम सब नन्हें फूल
 आनंद से ताली बजाकर गाएंगे
 सच्चाई और भलाई अपनाएंगे
 हमारे हृदय केवल तेरे हैं
-हमें नेक राह दिखाओ प्रभु!","Children, Joy, Youth",Children,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
+हमें नेक राह दिखाओ प्रभु!","Children, Joy, Youth",Children,,https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3,https://www.youtube.com/watch?v=3JZ_D3ELwOQ,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
 S005,Evening Meditation (மாலை நேர தியானம்),"பகலின் உழைப்பு முடிந்ததுவே
 மாலை பொழுதில் அமர்ந்தேன்
 தூய மனதோடு உம்மை நோக்கினேன்
@@ -138,7 +138,7 @@ Proclaiming Your love to all the earth!","दिन भर का परिश�
 तेरे पंखों की ओट में मेरी शरण है
 मुझे मीठी और शांत नींद दे
 कल सुबह फिर गाऊँगा
-तेरी असीम कृपा की घोषणा करूँगा!","Evening, Meditation, Prayer",Prayer,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
+तेरी असीम कृपा की घोषणा करूँगा!","Evening, Meditation, Prayer",Prayer,https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=600&auto=format&fit=crop,,,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
 S006,The Lord is My Shepherd (கர்த்தர் என் மேய்ப்பராய் இருக்கிறார்),"கர்த்தர் என் மேய்ப்பராய் இருக்கிறார்
 தாழ்ச்சி அடையேன் என்றென்றுமே
 புல்லுள்ள இடங்களில் மேய்க்கின்றார்
@@ -166,7 +166,7 @@ I will fear no evil!","प्रभु मेरा चरवाहा है, �
 वह मुझे धर्म के मार्गों पर चलाता है
 अपने पवित्र नाम के निमित्त
 चाहे मैं घोर अंधकार से भरी तराई में भी चलूँ
-मैं किसी विपत्ति से न डरूँगा!","Worship, Scripture, Faith",Scripture,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
+मैं किसी विपत्ति से न डरूँगा!","Worship, Scripture, Faith",Scripture,,,,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
 S007,Grace Unmeasured (அளவற்ற கிருபை),"ஆழமான சமுத்திரத்தை பார்க்கிலும்
 பெரியது உம் கிருபையே
 வானங்களை விட உயர்ந்ததுவே
@@ -194,7 +194,7 @@ The eternal anchor of my life!","गहरे सागर से भी गह�
 कृपा, ईश्वर की अद्भुत कृपा
 जो मुझे थामे और सम्भाले रहती है
 थक जाने पर भी मुझे बल देती है
-मेरे जीवन का सच्चा सहारा!","Grace, Worship, Devotion",Worship,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
+मेरे जीवन का सच्चा सहारा!","Grace, Worship, Devotion",Worship,https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop,https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3,,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
 S008,Celebration of Joy (மகிழ்ச்சியின் கீதம்),"ஆனந்தமாய் கொண்டாடுவோம்
 ஆண்டவர் செய்த நன்மைகட்காய்
 துயரங்கள் யாவும் நீங்கிற்றே
@@ -222,7 +222,7 @@ Triumph is ours forevermore!","आओ मिलकर आनंद मनाए�
 खुशी और आनंद हमारे दिलों में
 एक प्यारा गीत हमारे होंठों पर
 जय का जयजयकार करेंगे
-सदा के लिए हम विजयी हैं!","Celebration, Joy, Praise",Praise,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
+सदा के लिए हम विजयी हैं!","Celebration, Joy, Praise",Praise,,,https://www.youtube.com/watch?v=L_LUpnjgPso,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
 S009,Ancient Heritage Chant (பாரம்பரிய கீதம் - English & Tamil only),"தொன்மையான இறை வாக்கே
 எங்கள் தலைமுறையின் ஒளியே
 ஆதி முதல் அந்தம் வரை
@@ -241,7 +241,7 @@ Chorus:
 From generation to generation
 We will sing praises to Your name
 Your renown endures forever
-Shining over all the earth!",,"Heritage, Tradition, Tamil",Heritage,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
+Shining over all the earth!",,"Heritage, Tradition, Tamil",Heritage,,,,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
 S010,Divine Anthem (English & Hindi only),,"O God our help in ages past
 Our hope for years to come
 Our shelter from the stormy blast
@@ -260,4 +260,4 @@ And our defense is sure!","हे हमारे ईश्वर, तू ही
 तेरे सिंहासन की छाया तले
 तेरे भक्त सुरक्षित रहे हैं
 तेरी भुजा ही पर्याप्त है
-और हमारा बचाव अटल है!","Anthem, Classic, Devanagari",Classic,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com
+और हमारा बचाव अटल है!","Anthem, Classic, Devanagari",Classic,https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop,https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3,https://www.youtube.com/watch?v=fJ9rUzIMcZQ,TRUE,08-Oct-2026 07:30:00 PM IST,admin@example.com

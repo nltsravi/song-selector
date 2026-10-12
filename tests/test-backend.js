@@ -187,7 +187,61 @@ assert(publicLogoCode.includes('LOGO_IMAGE_WATERMARK_BASE64'), 'logo-data.js mus
 
 console.log('✓ Export first page, header collection name on right, footer numbering (page 1 none, page 2+ starts at 1) & watermark verified.');
 
+// Test 7: CSV Columns, Song Card Layout, Audio/Video Icons, and Favicon
+console.log('\nTest 7: CSV Columns, Song Card Layout, Audio/Video Icons, and Favicon');
+const csvTemplate = fs.readFileSync('docs/Songs_Template.csv', 'utf8');
+const headerLine = csvTemplate.split('\n')[0];
+assert(headerLine.includes('Image URL'), 'CSV template must contain Image URL column');
+assert(headerLine.includes('Audio URL'), 'CSV template must contain Audio URL column');
+assert(headerLine.includes('Video URL'), 'CSV template must contain Video URL column');
+
+// Verify SongService extracts imageUrl, audioUrl, videoUrl
+const songServiceCode = fs.readFileSync('apps-script/SongService.gs', 'utf8');
+assert(songServiceCode.includes("headerMap['image url']"), 'SongService must check image url header');
+assert(songServiceCode.includes("headerMap['audio url']"), 'SongService must check audio url header');
+assert(songServiceCode.includes("headerMap['video url']"), 'SongService must check video url header');
+assert(songServiceCode.includes('imageUrl: imageUrl'), 'SongService must output imageUrl');
+assert(songServiceCode.includes('audioUrl: audioUrl'), 'SongService must output audioUrl');
+assert(songServiceCode.includes('videoUrl: videoUrl'), 'SongService must output videoUrl');
+
+// Verify SetupSheet & Code.gs
+const setupSheetCode = fs.readFileSync('apps-script/SetupSheet.gs', 'utf8');
+assert(setupSheetCode.includes("'Image URL'"), 'SetupSheet must include Image URL header');
+assert(setupSheetCode.includes("'Audio URL'"), 'SetupSheet must include Audio URL header');
+assert(setupSheetCode.includes("'Video URL'"), 'SetupSheet must include Video URL header');
+
+// Verify index.html favicon & logo
+const publicIndex = fs.readFileSync('public/index.html', 'utf8');
+assert(publicIndex.includes('omkaarssl-logo-transperent-black.png'), 'public/index.html must reference omkaarssl-logo-transperent-black.png');
+assert(publicIndex.includes('rel="icon"'), 'public/index.html must define favicon');
+
+const appsScriptIndex = fs.readFileSync('apps-script/index.html', 'utf8');
+assert(appsScriptIndex.includes('rel="icon"'), 'apps-script/index.html must define favicon');
+assert(appsScriptIndex.includes('brand-logo-img'), 'apps-script/index.html must render brand-logo-img');
+
+// Verify app.js & javascript.html song card layout
+const appJsCode = fs.readFileSync('public/app.js', 'utf8');
+assert(appJsCode.includes('song-card-image-wrap'), 'app.js must render image wrap on top');
+assert(appJsCode.includes('media-btn audio-btn'), 'app.js must render audio button');
+assert(appJsCode.includes('media-btn video-btn'), 'app.js must render video button');
+assert(appJsCode.includes('omkaarssl-logo-transperent-black.png'), 'app.js must use omkaarssl logo as default fallback image');
+
+const jsHtmlCode = fs.readFileSync('apps-script/javascript.html', 'utf8');
+assert(jsHtmlCode.includes('song-card-image-wrap'), 'javascript.html must render image wrap on top');
+assert(jsHtmlCode.includes('media-btn audio-btn'), 'javascript.html must render audio button');
+assert(jsHtmlCode.includes('media-btn video-btn'), 'javascript.html must render video button');
+
+// Verify styles.css hides song ID and styles image on top
+const stylesCss = fs.readFileSync('public/styles.css', 'utf8');
+assert(stylesCss.includes('.song-id-badge'), 'styles.css must reference .song-id-badge');
+assert(stylesCss.includes('display: none'), 'styles.css must hide song id');
+assert(stylesCss.includes('.song-card-image-wrap'), 'styles.css must style .song-card-image-wrap');
+assert(stylesCss.includes('.media-btn.audio-btn.enabled'), 'styles.css must style enabled audio button');
+assert(stylesCss.includes('.media-btn.video-btn.enabled'), 'styles.css must style enabled video button');
+
+console.log('✓ CSV columns, song card image on top, hidden ID, checkbox placement, media icons, and favicon verified.');
+
 console.log('\n========================================');
-console.log('ALL TESTS PASSED SUCCESSFULLY! (6/6)');
+console.log('ALL TESTS PASSED SUCCESSFULLY! (7/7)');
 console.log('========================================\n');
 

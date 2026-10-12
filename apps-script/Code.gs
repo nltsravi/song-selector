@@ -12,6 +12,7 @@ function doGet(e) {
   // Pre-load user state so client knows authentication immediately
   var currentUser = AuthService.getCurrentUser();
   template.initialUser = currentUser;
+  template.logoBase64 = (typeof LOGO_IMAGE_BASE64 !== 'undefined') ? LOGO_IMAGE_BASE64 : '';
 
   var output = template.evaluate();
   output.setTitle('Song Collection & Lyrics Library');
@@ -191,11 +192,14 @@ function apiSetupSheetStructure() {
         'Devanagari Lyrics',
         'Tags',
         'Category',
+        'Image URL',
+        'Audio URL',
+        'Video URL',
         'Active',
         'Updated At',
         'Updated By'
       ]);
-      var songHeaderRange = songsSheet.getRange(1, 1, 1, 10);
+      var songHeaderRange = songsSheet.getRange(1, 1, 1, 13);
       songHeaderRange.setFontWeight('bold');
       songHeaderRange.setBackground('#1e293b');
       songHeaderRange.setFontColor('#ffffff');

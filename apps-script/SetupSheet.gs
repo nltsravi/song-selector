@@ -24,6 +24,9 @@ function populateSampleSongsAndStructure() {
     'Devanagari Lyrics',
     'Tags',
     'Category',
+    'Image URL',
+    'Audio URL',
+    'Video URL',
     'Active',
     'Updated At',
     'Updated By'
@@ -47,6 +50,9 @@ function populateSampleSongsAndStructure() {
       'सुबह सवेरे तेरे चरणों में आते हैं\nप्रभु अपनी असीम अनुग्रह हमें दीजिए\nइस नए दिन की शुरुआत में हम गाएंगे\nक्योंकि तू ही हमारे जीवन का सच्चा मार्गदर्शक है!\n\nकोरस:\nहाल्लेलूयाह हम तेरी स्तुति करेंगे\nसदा सर्वदा तेरा गुणगान करेंगे\nतेरी दया हर सुबह नई होती है\nतेरी सच्चाई कितनी महान है!',
       'Morning, Worship, Praise',
       'Worship',
+      'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=600&auto=format&fit=crop',
+      'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       true,
       DateHelper.getFormattedTimestamp(),
       'system@admin'
@@ -59,6 +65,9 @@ function populateSampleSongsAndStructure() {
       'शांति के राजकुमार, प्यारे प्रभु\nमेरे अशांत मन को शांति दीजिए\nजब भी तूफ़ान जीवन में आते हैं\nतेरी छाया में मुझे विश्राम मिलता है!\n\nकोरस:\nतेरी मधुर आवाज़ शांति लाती है\nहर डर दूर होता है और दिल गाता है\nजो हाथ मुझे संभालता है वह तेरा ही हाथ है\nसदा तेरे साथ मैं रहूँगा!',
       'Prayer, Peace, Comfort',
       'Prayer',
+      'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=600&auto=format&fit=crop',
+      'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+      '',
       true,
       DateHelper.getFormattedTimestamp(),
       'system@admin'

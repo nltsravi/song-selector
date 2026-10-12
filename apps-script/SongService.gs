@@ -83,6 +83,10 @@ var SongService = {
     var colDevanagari = headerMap['devanagari lyrics'] - 1;
     var colTags = headerMap['tags'] - 1;
     var colCategory = headerMap['category'] ? headerMap['category'] - 1 : -1;
+    var colImageUrl = headerMap['image url'] ? headerMap['image url'] - 1 : (headerMap['image'] ? headerMap['image'] - 1 : -1);
+    var colAudioUrl = headerMap['audio url'] ? headerMap['audio url'] - 1 : (headerMap['audio'] ? headerMap['audio'] - 1 : -1);
+    var colVideoUrl = headerMap['video url'] ? headerMap['video url'] - 1 : (headerMap['video'] ? headerMap['video'] - 1 : -1);
+    var colMediaUrl = headerMap['media url'] ? headerMap['media url'] - 1 : -1;
     var colActive = headerMap['active'] - 1;
     var colUpdatedAt = headerMap['updated at'] ? headerMap['updated at'] - 1 : -1;
     var colUpdatedBy = headerMap['updated by'] ? headerMap['updated by'] - 1 : -1;
@@ -107,6 +111,13 @@ var SongService = {
       var englishLyrics = (row[colEnglish] || '').toString().trim();
       var devanagariLyrics = (row[colDevanagari] || '').toString().trim();
 
+      var imageUrl = colImageUrl >= 0 ? (row[colImageUrl] || '').toString().trim() : '';
+      var audioUrl = colAudioUrl >= 0 ? (row[colAudioUrl] || '').toString().trim() : '';
+      var videoUrl = colVideoUrl >= 0 ? (row[colVideoUrl] || '').toString().trim() : '';
+      if (!audioUrl && colMediaUrl >= 0) {
+        audioUrl = (row[colMediaUrl] || '').toString().trim();
+      }
+
       songs.push({
         id: id,
         title: title,
@@ -119,6 +130,9 @@ var SongService = {
         tags: normalizedTags,
         tagList: tagList,
         category: colCategory >= 0 ? (row[colCategory] || '').toString().trim() : '',
+        imageUrl: imageUrl,
+        audioUrl: audioUrl,
+        videoUrl: videoUrl,
         updatedAt: colUpdatedAt >= 0 ? (row[colUpdatedAt] || '').toString().trim() : '',
         updatedBy: colUpdatedBy >= 0 ? (row[colUpdatedBy] || '').toString().trim() : ''
       });
