@@ -158,135 +158,163 @@ var ExportService = {
     var extension = (validFormat === 'PDF') ? 'pdf' : 'docx';
     var filename = sanitizedName + '_' + validLang + '.' + extension;
 
-    // Create export document via Google Docs (ensures accurate Unicode typography for Indic scripts)
+    // Create export document via template (enables Different First Page and Page Numbering starting from 1)
     var exportFolder = ConfigService.getExportFolder();
     var tempDocName = 'TEMP_' + exportId + '_' + sanitizedName;
-    var doc = DocumentApp.create(tempDocName);
-    var docFile = DriveApp.getFileById(doc.getId());
+    var doc = null;
+    var docFile = null;
+    var templateId = ConfigService.getExportTemplateId();
 
-    // Move to designated export folder (Section 38)
-    docFile.moveTo(exportFolder);
+    if (templateId) {
+      try {
+        var templateFile = DriveApp.getFileById(templateId);
+        docFile = templateFile.makeCopy(tempDocName, exportFolder);
+        doc = DocumentApp.openById(docFile.getId());
+      } catch (copyErr) {
+        Logger.log('Could not copy template, falling back to DocumentApp.create: ' + copyErr);
+      }
+    }
+
+    if (!doc) {
+      doc = DocumentApp.create(tempDocName);
+      docFile = DriveApp.getFileById(doc.getId());
+      docFile.moveTo(exportFolder);
+    }
 
     try {
-      // 1. Setup Header with Logo on the left, horizontal rule below, and center watermark across all pages
-      var header = doc.addHeader();
-      header.clear();
-
-      var headerPara = header.appendParagraph('');
-      headerPara.setAlignment(DocumentApp.HorizontalAlignment.LEFT);
-      headerPara.setSpacingAfter(4);
-
       var logoBlob = this.getLogoBlob();
-      if (logoBlob) {
-        try {
-          var inlineImg = headerPara.appendInlineImage(logoBlob);
-          // 0.54 inches width = 39 points (0.54 * 72), 0.5 inches height = 36 points (0.5 * 72)
-          inlineImg.setWidth(39);
-          inlineImg.setHeight(36);
-        } catch (imgErr) {
-          Logger.log('Error adding logo to header: ' + imgErr);
-        }
-      }
-
-      // Add watermark: Anchored in header so it automatically repeats across ALL pages of the export document
       var watermarkBlob = this.getWatermarkBlob();
-      if (watermarkBlob) {
-        try {
-          var pageWidth = 612;
-          var pageHeight = 792;
-          var marginLeft = 72;
-          try {
-            var bodyRef = doc.getBody();
-            if (bodyRef) {
-              pageWidth = bodyRef.getPageWidth() || 612;
-              pageHeight = bodyRef.getPageHeight() || 792;
-              marginLeft = bodyRef.getMarginLeft() || 72;
+
+      // 1. Setup Header across all pages (both first page header and default header)
+      // Header has logo on the left, collection name on the right, horizontal rule below,
+      // and centered light watermark across all pages.
+      var headers = [];
+      try {
+        var docParent = doc.getHeader() ? doc.getHeader().getParent() : null;
+        if (docParent) {
+          for (var hIdx = 0; hIdx < docParent.getNumChildren(); hIdx++) {
+            var cEl = docParent.getChild(hIdx);
+            if (cEl.getType() === DocumentApp.ElementType.HEADER_SECTION) {
+              headers.push(cEl.asHeaderSection());
             }
-          } catch (dimErr) {}
-
-          // Target dimensions on PDF page in points:
-          // Full printable width is 468 pt (6.5 inches)
-          var targetWidthPt = pageWidth - (marginLeft * 2); // 468 pt
-          var targetHeightPt = Math.round(targetWidthPt / 1.2818); // ~365 pt
-
-          // Symmetrical center on page:
-          var targetLeftPt = Math.round((pageWidth - targetWidthPt) / 2); // 72 pt
-          var targetTopPt = Math.round((pageHeight - targetHeightPt) / 2); // 213.5 pt
-
-          var leftOffsetPt = targetLeftPt - marginLeft; // 0 pt
-          // Vertical offset anchored to header paragraph for dead-center placement across all pages
-          var topOffsetPt = targetTopPt - 78;
-
-          // In Google Docs DocumentApp, PositionedImage dimensions and offsets are in 96-DPI pixels.
-          // Google Docs scales pixels by 72/96 (0.75) when exporting to PDF.
-          // Multiply points by 96/72 (4/3) to produce exact points and perfect centering in exported PDF.
-          var ptToPx = 96 / 72;
-
-          var posImg = headerPara.addPositionedImage(watermarkBlob);
-          posImg.setWidth(Math.round(targetWidthPt * ptToPx));
-          posImg.setHeight(Math.round(targetHeightPt * ptToPx));
-          posImg.setLeftOffset(Math.round(leftOffsetPt * ptToPx));
-          posImg.setTopOffset(Math.round(topOffsetPt * ptToPx));
-          posImg.setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT);
-        } catch (wmErr) {
-          Logger.log('Error adding watermark image: ' + wmErr);
+          }
         }
+      } catch (e) {}
+
+      if (headers.length === 0) {
+        var h = doc.getHeader() || doc.addHeader();
+        headers.push(h);
       }
 
-      // Horizontal line below logo in the header
-      header.appendHorizontalRule();
+      for (var hI = 0; hI < headers.length; hI++) {
+        var header = headers[hI];
+        header.clear();
 
-      // 2. Setup Footer with horizontal rule, copyright on left, collection name on right
-      var footer = doc.addFooter();
-      footer.clear();
+        var headerPara = header.appendParagraph('');
+        headerPara.setAlignment(DocumentApp.HorizontalAlignment.LEFT);
+        headerPara.setSpacingAfter(0);
 
-      // Horizontal line above copyright info
-      footer.appendHorizontalRule();
+        // Watermark: Anchored in header so it automatically repeats centered across all pages
+        if (watermarkBlob) {
+          try {
+            var pageWidth = 612;
+            var pageHeight = 792;
+            var marginLeft = 72;
+            try {
+              var bodyRef = doc.getBody();
+              if (bodyRef) {
+                pageWidth = bodyRef.getPageWidth() || 612;
+                pageHeight = bodyRef.getPageHeight() || 792;
+                marginLeft = bodyRef.getMarginLeft() || 72;
+              }
+            } catch (dimErr) {}
 
-      var footerTable = footer.appendTable([
-        ['© OmkaarSSL', collection.name]
-      ]);
-      footerTable.setBorderWidth(0);
+            var targetWidthPt = pageWidth - (marginLeft * 2); // 468 pt
+            var targetHeightPt = Math.round(targetWidthPt / 1.2818); // ~365 pt
 
-      try {
-        footerTable.setColumnWidth(0, 234);
-        footerTable.setColumnWidth(1, 234);
+            var targetLeftPt = Math.round((pageWidth - targetWidthPt) / 2); // 72 pt
+            var targetTopPt = Math.round((pageHeight - targetHeightPt) / 2); // 213.5 pt
 
-        var cellLeft = footerTable.getCell(0, 0);
-        var cellRight = footerTable.getCell(0, 1);
+            var leftOffsetPt = targetLeftPt - marginLeft; // 0 pt
+            var topOffsetPt = targetTopPt - 78;
 
-        var pLeft = cellLeft.getChild(0).asParagraph();
-        pLeft.setAlignment(DocumentApp.HorizontalAlignment.LEFT);
-        pLeft.setFontSize(9);
-        pLeft.setForegroundColor('#64748b');
+            var ptToPx = 96 / 72;
 
+            var posImg = headerPara.addPositionedImage(watermarkBlob);
+            posImg.setWidth(Math.round(targetWidthPt * ptToPx));
+            posImg.setHeight(Math.round(targetHeightPt * ptToPx));
+            posImg.setLeftOffset(Math.round(leftOffsetPt * ptToPx));
+            posImg.setTopOffset(Math.round(topOffsetPt * ptToPx));
+            posImg.setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT);
+          } catch (wmErr) {
+            Logger.log('Error adding watermark image: ' + wmErr);
+          }
+        }
+
+        // Header Table: Logo on left, Collection Name on right side
+        var headerTable = header.appendTable([
+          ['', collection.name]
+        ]);
+        headerTable.setBorderWidth(0);
+        headerTable.setColumnWidth(0, 234);
+        headerTable.setColumnWidth(1, 234);
+
+        if (logoBlob) {
+          try {
+            var cellLeft = headerTable.getCell(0, 0);
+            var pLeft = cellLeft.getChild(0).asParagraph();
+            pLeft.setSpacingAfter(0);
+            var inlineImg = pLeft.appendInlineImage(logoBlob);
+            inlineImg.setWidth(39);
+            inlineImg.setHeight(36);
+          } catch (imgErr) {
+            Logger.log('Error adding logo to header: ' + imgErr);
+          }
+        }
+
+        var cellRight = headerTable.getCell(0, 1);
         var pRight = cellRight.getChild(0).asParagraph();
         pRight.setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
         pRight.setFontSize(9);
         pRight.setForegroundColor('#64748b');
-      } catch (tableErr) {
-        Logger.log('Error formatting footer table: ' + tableErr);
+
+        header.appendHorizontalRule();
       }
 
-      // 3. Document Body (First page: Collection Name only below header; removed created by, date, count, language)
+      // 2. Setup Footer (If not already configured by template)
+      if (!doc.getFooter()) {
+        var footer = doc.addFooter();
+        footer.clear();
+        footer.appendHorizontalRule();
+        var footerTable = footer.appendTable([
+          ['© OmkaarSSL', '']
+        ]);
+        footerTable.setBorderWidth(0);
+        footerTable.setColumnWidth(0, 234);
+        footerTable.setColumnWidth(1, 234);
+
+        var fCellLeft = footerTable.getCell(0, 0);
+        var fPLeft = fCellLeft.getChild(0).asParagraph();
+        fPLeft.setAlignment(DocumentApp.HorizontalAlignment.LEFT);
+        fPLeft.setFontSize(9);
+        fPLeft.setForegroundColor('#64748b');
+      }
+
+      // 3. Document Body
       var body = doc.getBody();
       body.clear();
 
-      var titlePara = body.appendParagraph(collection.name);
-      try {
-        if (DocumentApp.ParagraphHeading && DocumentApp.ParagraphHeading.TITLE) {
-          titlePara.setHeading(DocumentApp.ParagraphHeading.TITLE);
-        } else {
-          titlePara.setFontSize(22).setBold(true);
-        }
-      } catch (headingErr) {
-        titlePara.setFontSize(22).setBold(true);
+      // First Page: Collection name in the center with increased font size
+      for (var sp = 0; sp < 6; sp++) {
+        body.appendParagraph('');
       }
-      titlePara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-      titlePara.setSpacingAfter(12);
 
-      // (Horizontal rule below title removed)
-      body.appendParagraph('');
+      var titlePara = body.appendParagraph(collection.name);
+      titlePara.setFontSize(30).setBold(true);
+      titlePara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+
+      // Page break to end first page so songs begin on page 2 (with page number starting at 1)
+      body.appendPageBreak();
 
       // Add each song with preserved order (Section 20, 26, 27)
       for (var sIdx = 0; sIdx < songsToExport.length; sIdx++) {
@@ -308,7 +336,6 @@ var ExportService = {
         lyricsPara.setLineSpacing(1.15);
 
         if (sIdx < songsToExport.length - 1) {
-          // (Horizontal rule between songs removed)
           body.appendParagraph('');
         }
       }

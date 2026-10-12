@@ -140,19 +140,37 @@ assert.strictEqual(userCols.length, 2);
 assert.strictEqual(userCols.some(c => c.userEmail === 'other@example.com'), false);
 console.log('✓ Strict ownership filtering verified.');
 
-// Test 6: Export Footer & Watermark Configuration
-console.log('\nTest 6: Export Footer & Watermark Configuration');
+// Test 6: Export First Page, Header, Footer & Watermark Configuration
+console.log('\nTest 6: Export First Page, Header, Footer & Watermark Configuration');
 const fs = require('fs');
 const exportServiceCode = fs.readFileSync('apps-script/ExportService.gs', 'utf8');
 const mockBackendCode = fs.readFileSync('public/mock-backend.js', 'utf8');
 
-// Assert footer has © OmkaarSSL and no Page 1
-assert(exportServiceCode.includes("['© OmkaarSSL', collection.name]"), 'ExportService must have © OmkaarSSL and collection name in footer');
-assert(!exportServiceCode.includes("Page 1"), 'ExportService must not include Page 1 in footer');
+// Assert First Page Cover in ExportService: collection name in body center with increased font and page break
+assert(exportServiceCode.includes('titlePara.setFontSize(30).setBold(true)'), 'ExportService must set increased font size for collection name on first page');
+assert(exportServiceCode.includes('titlePara.setAlignment(DocumentApp.HorizontalAlignment.CENTER)'), 'ExportService must center collection name on first page');
+assert(exportServiceCode.includes('body.appendPageBreak()'), 'ExportService must append page break after first page');
 
-assert(mockBackendCode.includes('<td class="footer-left">© OmkaarSSL</td>'), 'mock-backend must have © OmkaarSSL in footer left');
-assert(mockBackendCode.includes('<td class="footer-right">${col.name}</td>'), 'mock-backend must have ${col.name} in footer right');
-assert(!mockBackendCode.includes('${col.name} | Page 1'), 'mock-backend must not have | Page 1');
+// Assert Header has collection name on right side in ExportService
+assert(exportServiceCode.includes("['', collection.name]"), 'ExportService must have collection name on right in header table');
+assert(exportServiceCode.includes('pRight.setAlignment(DocumentApp.HorizontalAlignment.RIGHT)'), 'ExportService must right-align collection name in header');
+
+// Assert First Page and subsequent footer behavior in ExportService
+assert(exportServiceCode.includes('getExportTemplateId'), 'ExportService must call getExportTemplateId for different first page & page numbering');
+assert(exportServiceCode.includes('© OmkaarSSL'), 'ExportService must include © OmkaarSSL in footer');
+
+// Assert mock-backend structure:
+// 1. Header has collection name on right side
+assert(mockBackendCode.includes('<td class="header-right">${col.name}</td>'), 'mock-backend must display collection name in header right');
+
+// 2. First page body has collection name with increased font
+assert(mockBackendCode.includes('<div class="collection-title-cover">${col.name}</div>'), 'mock-backend must have first page cover title');
+
+// 3. First page footer has NO page number
+assert(mockBackendCode.includes('<td class="footer-right"></td>'), 'mock-backend first page footer must not have page number');
+
+// 4. Subsequent page footer starts page number from 1
+assert(mockBackendCode.includes("<span style=\"mso-field-code:'PAGE'\">1</span>"), 'mock-backend subsequent footer must display page number starting from 1');
 
 // Assert watermark is enabled in both ExportService and mock-backend
 assert(!exportServiceCode.includes('// Watermark addition commented out for now'), 'ExportService watermark must be enabled');
@@ -167,7 +185,7 @@ assert(logoCode.includes('LOGO_IMAGE_WATERMARK_BASE64'), 'Logo.gs must define LO
 const publicLogoCode = fs.readFileSync('public/logo-data.js', 'utf8');
 assert(publicLogoCode.includes('LOGO_IMAGE_WATERMARK_BASE64'), 'logo-data.js must define LOGO_IMAGE_WATERMARK_BASE64');
 
-console.log('✓ Export footer & watermark verified: "© OmkaarSSL" footer and light watermark enabled.');
+console.log('✓ Export first page, header collection name on right, footer numbering (page 1 none, page 2+ starts at 1) & watermark verified.');
 
 console.log('\n========================================');
 console.log('ALL TESTS PASSED SUCCESSFULLY! (6/6)');

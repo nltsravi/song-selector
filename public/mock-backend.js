@@ -483,10 +483,13 @@
       const filename = `${cleanColName}_${lang}.${fmt.toLowerCase()}`;
 
       // Build document text content with Header and Footer structure
-      let docContent = `[HEADER - Left Aligned: Logo (0.54" x 0.5", 90% Opacity, 20% Brightness)]\n`;
+      let docContent = `[HEADER - Left: Logo (0.54" x 0.5") | Right: ${col.name}]\n`;
       docContent += `----------------------------------------------------------\n\n`;
       docContent += `[WATERMARK - Center of Page: OmkaarSSL logo, Full Size, Very Light Colour (7% Opacity)]\n\n`;
-      docContent += `${col.name}\n\n`;
+      docContent += `[FIRST PAGE: COVER]\n\n`;
+      docContent += `                      ${col.name}\n\n`;
+      docContent += `[FOOTER (PAGE 1): © OmkaarSSL]\n\n`;
+      docContent += `=================== PAGE BREAK ===================\n\n`;
 
       songsToExport.forEach((s) => {
         let lyrics = '';
@@ -498,7 +501,7 @@
       });
 
       docContent += `\n----------------------------------------------------------\n`;
-      docContent += `[FOOTER: © OmkaarSSL                     ${col.name}]\n`;
+      docContent += `[FOOTER: © OmkaarSSL                           1]\n`;
 
       // Encode document to base64
       let mimeType = 'text/plain;charset=utf-8';
@@ -514,14 +517,23 @@
           <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
           <head><meta charset='utf-8'><title>${col.name}</title>
           <style>
-            @page { margin: 1in; }
+            @page {
+              margin: 1in;
+              mso-header: h1;
+              mso-footer: f1;
+              mso-first-header: fh1;
+              mso-first-footer: ff1;
+              mso-title-page: yes;
+            }
             body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; margin: 30px; position: relative; }
             .header-table { width: 100%; border-bottom: 1px solid #cbd5e1; margin-bottom: 24px; padding-bottom: 8px; }
-            .header-logo { text-align: left; }
-            .header-logo img { width: 0.54in; height: 0.5in; opacity: 0.9; object-fit: contain; filter: brightness(1.2); }
+            .header-left { text-align: left; }
+            .header-left img { width: 0.54in; height: 0.5in; opacity: 0.9; object-fit: contain; filter: brightness(1.2); }
+            .header-right { text-align: right; font-size: 11px; color: #64748b; vertical-align: middle; }
             .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); opacity: 1; z-index: -1000; pointer-events: none; text-align: center; width: 80%; max-width: 600px; }
             .watermark img { width: 100%; height: auto; opacity: 1; display: block; margin: 0 auto; filter: brightness(1.0) contrast(1.0); }
-            .collection-title { text-align: center; color: #0f172a; font-size: 24px; font-weight: bold; margin: 16px 0 24px 0; }
+            .first-page-body { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 55vh; margin: 100px 0; text-align: center; }
+            .collection-title-cover { text-align: center; color: #0f172a; font-size: 32px; font-weight: bold; }
             h2 { color: #4338ca; margin-top: 24px; }
             .lyrics { white-space: pre-wrap; margin-bottom: 24px; font-size: 14px; line-height: 1.8; }
             .footer-table { width: 100%; border-top: 1px solid #cbd5e1; margin-top: 36px; padding-top: 8px; font-size: 11px; color: #64748b; }
@@ -535,23 +547,46 @@
               <img src="data:image/png;base64,${watermarkBase64}" alt="Watermark" />
             </div>
 
-            <!-- Header with 0.54in x 0.5in logo on the left with opacity 90%, brightness 20%, and horizontal rule below -->
-            <div class="header-table">
-              <div class="header-logo"><img src="data:image/png;base64,${headerLogoBase64}" alt="Logo" style="width:0.54in;height:0.5in;opacity:0.9;object-fit:contain;filter:brightness(1.2);" /></div>
+            <!-- First Page Header: Logo on the left, collection name on the right side -->
+            <table class="header-table">
+              <tr>
+                <td class="header-left"><img src="data:image/png;base64,${headerLogoBase64}" alt="Logo" style="width:0.54in;height:0.5in;opacity:0.9;object-fit:contain;filter:brightness(1.2);" /></td>
+                <td class="header-right">${col.name}</td>
+              </tr>
+            </table>
+
+            <!-- First Page Body: Collection name in the center with increased font -->
+            <div class="first-page-body">
+              <div class="collection-title-cover">${col.name}</div>
             </div>
 
-            <div class="collection-title">${col.name}</div>
+            <!-- First Page Footer: No page number -->
+            <table class="footer-table" style="page-break-after: always;">
+              <tr>
+                <td class="footer-left">© OmkaarSSL</td>
+                <td class="footer-right"></td>
+              </tr>
+            </table>
 
+            <!-- Subsequent Page Header: Logo on the left, collection name on the right side -->
+            <table class="header-table">
+              <tr>
+                <td class="header-left"><img src="data:image/png;base64,${headerLogoBase64}" alt="Logo" style="width:0.54in;height:0.5in;opacity:0.9;object-fit:contain;filter:brightness(1.2);" /></td>
+                <td class="header-right">${col.name}</td>
+              </tr>
+            </table>
+
+            <!-- Subsequent Pages: Songs -->
             ${songsToExport.map((s) => {
               let l = (lang.toLowerCase() === 'tamil' ? s.tamilLyrics : (lang.toLowerCase() === 'devanagari' ? s.devanagariLyrics : s.englishLyrics)) || '';
               return `<h2>${s.title}</h2><div class="lyrics">${l.replace(/\n/g, '<br>')}</div><div style="margin-bottom:24px;"></div>`;
             }).join('')}
 
-            <!-- Footer with horizontal rule above -->
+            <!-- Subsequent Page Footer: Page number starting from 1 -->
             <table class="footer-table">
               <tr>
                 <td class="footer-left">© OmkaarSSL</td>
-                <td class="footer-right">${col.name}</td>
+                <td class="footer-right"><span style="mso-field-code:'PAGE'">1</span></td>
               </tr>
             </table>
           </body></html>

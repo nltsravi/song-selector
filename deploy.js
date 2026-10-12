@@ -128,6 +128,15 @@ function syncConfigWithEnv(env) {
     }
   }
 
+  if (env.EXPORT_TEMPLATE_ID && env.EXPORT_TEMPLATE_ID.trim()) {
+    const tId = env.EXPORT_TEMPLATE_ID.trim();
+    const regex = /EXPORT_TEMPLATE_ID:\s*['"][^'"]*['"]/;
+    if (regex.test(content)) {
+      content = content.replace(regex, `EXPORT_TEMPLATE_ID: '${tId}'`);
+      modified = true;
+    }
+  }
+
   if (modified) {
     fs.writeFileSync(configPath, content);
     info('Updated apps-script/Config.gs with values from .env.');

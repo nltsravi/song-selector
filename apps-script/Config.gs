@@ -22,6 +22,9 @@ const CONFIG = {
   // Google Drive folder name for generated export documents (Section 38)
   DRIVE_EXPORT_FOLDER_NAME: 'Song_Library_Exports',
 
+  // Google Docs Template ID for exports (contains First Page titlePg and page numbering starting from 1)
+  EXPORT_TEMPLATE_ID: '1-D-ARQkuAOUTvFmjtxGNudcGkIm4lZ-5Imbw7u9pH4Q',
+
   // Cache duration in seconds for song metadata (Section 43)
   CACHE_DURATION_SECONDS: 300,
 
@@ -111,5 +114,21 @@ var ConfigService = {
       }
     } catch (e) {}
     return (CONFIG.ALLOWED_DOMAIN || '').toLowerCase();
+  },
+
+  /**
+   * Gets the template document ID for exports (different first page & page numbering)
+   */
+  getExportTemplateId: function() {
+    try {
+      var props = PropertiesService.getScriptProperties();
+      var idFromProps = props.getProperty('EXPORT_TEMPLATE_ID');
+      if (idFromProps && idFromProps.trim() !== '') {
+        return idFromProps.trim();
+      }
+    } catch (e) {
+      Logger.log('Could not read ScriptProperties EXPORT_TEMPLATE_ID: ' + e);
+    }
+    return CONFIG.EXPORT_TEMPLATE_ID;
   }
 };
