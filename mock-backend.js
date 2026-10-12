@@ -18,6 +18,9 @@
       "hasEnglish": true,
       "hasDevanagari": true,
       "category": "Worship",
+      "imageUrl": "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=600&auto=format&fit=crop",
+      "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+      "videoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
       "active": true
     },
     {
@@ -32,6 +35,9 @@
       "hasEnglish": true,
       "hasDevanagari": true,
       "category": "Prayer",
+      "imageUrl": "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=600&auto=format&fit=crop",
+      "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+      "videoUrl": "",
       "active": true
     },
     {
@@ -46,6 +52,9 @@
       "hasEnglish": true,
       "hasDevanagari": true,
       "category": "Praise",
+      "imageUrl": "",
+      "audioUrl": "",
+      "videoUrl": "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
       "active": true
     },
     {
@@ -60,6 +69,9 @@
       "hasEnglish": true,
       "hasDevanagari": true,
       "category": "Children",
+      "imageUrl": "",
+      "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+      "videoUrl": "https://www.youtube.com/watch?v=3JZ_D3ELwOQ",
       "active": true
     },
     {
@@ -74,6 +86,9 @@
       "hasEnglish": true,
       "hasDevanagari": true,
       "category": "Prayer",
+      "imageUrl": "https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=600&auto=format&fit=crop",
+      "audioUrl": "",
+      "videoUrl": "",
       "active": true
     },
     {
@@ -88,6 +103,9 @@
       "hasEnglish": true,
       "hasDevanagari": true,
       "category": "Scripture",
+      "imageUrl": "",
+      "audioUrl": "",
+      "videoUrl": "",
       "active": true
     },
     {
@@ -102,6 +120,9 @@
       "hasEnglish": true,
       "hasDevanagari": true,
       "category": "Worship",
+      "imageUrl": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop",
+      "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+      "videoUrl": "",
       "active": true
     },
     {
@@ -116,12 +137,15 @@
       "hasEnglish": true,
       "hasDevanagari": true,
       "category": "Praise",
+      "imageUrl": "",
+      "audioUrl": "",
+      "videoUrl": "https://www.youtube.com/watch?v=L_LUpnjgPso",
       "active": true
     },
     {
       "id": "S009",
       "title": "Ancient Heritage Chant (English & Tamil only)",
-      "tamilLyrics": "தொன்மையான இறை வாக்கே\nஎங்கள் தலைமுறையின் ஒளியே\nஆதி முதல் அந்தம் வரை\nமாறாத உம் சத்தியமே!",
+      "tamilLyrics": "தொன்மையான இறை வாக்கே\nஎங்கள் தலைமுறையின் ஒளியே\nஆதி முதல் அந்தம் வரை\nமாறாத உம் சத்தியமே!\n\nபல்லவி:\nதலைமுறை தலைமுறையாக\nஉம்மை போற்றி பாடுவோம்\nநிலைத்திருக்கும் உம் நாமம்\nபூமியெங்கும் விளங்கிடவே!",
       "englishLyrics": "Ancient Word of everlasting truth\nLight unto every generation\nFrom the beginning unto the end\nUnchanging is Your sacred truth!",
       "devanagariLyrics": "",
       "tags": "Heritage, Tradition, Tamil",
@@ -130,6 +154,9 @@
       "hasEnglish": true,
       "hasDevanagari": false,
       "category": "Heritage",
+      "imageUrl": "",
+      "audioUrl": "",
+      "videoUrl": "",
       "active": true
     },
     {
@@ -144,6 +171,9 @@
       "hasEnglish": true,
       "hasDevanagari": true,
       "category": "Classic",
+      "imageUrl": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop",
+      "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+      "videoUrl": "https://www.youtube.com/watch?v=fJ9rUzIMcZQ",
       "active": true
     }
   ];
@@ -152,7 +182,12 @@
   function getStoredSongs() {
     const raw = localStorage.getItem('SONGS_DATABASE');
     if (raw) {
-      try { return JSON.parse(raw); } catch (e) {}
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0].imageUrl !== 'undefined') {
+          return parsed;
+        }
+      } catch (e) {}
     }
     localStorage.setItem('SONGS_DATABASE', JSON.stringify(defaultSongs));
     return defaultSongs;

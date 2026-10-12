@@ -429,15 +429,68 @@ function renderSongs() {
   }
 
   let html = '';
+  const defaultSongImage = (typeof LOGO_IMAGE_BASE64 !== 'undefined' && LOGO_IMAGE_BASE64)
+    ? ('data:image/png;base64,' + LOGO_IMAGE_BASE64)
+    : 'images/omkaarssl-logo-transperent-black.png';
+
   state.filteredSongs.forEach(song => {
     const isSelected = state.selectedSongIds.has(song.id);
     const tagBadges = (song.tagList || []).map(t =>
       `<span class="song-tag-badge">${escapeHtml(t)}</span>`
     ).join('');
 
+    const hasCustomImage = Boolean(song.imageUrl && song.imageUrl.trim());
+    const displayImg = hasCustomImage ? song.imageUrl.trim() : defaultSongImage;
+
+    const hasAudio = Boolean(song.audioUrl && song.audioUrl.trim());
+    const audioBtnHtml = hasAudio
+      ? `<a href="${escapeHtml(song.audioUrl.trim())}" target="_blank" rel="noopener noreferrer" class="media-btn audio-btn enabled" title="Listen Audio: ${escapeHtml(song.audioUrl.trim())}" onclick="event.stopPropagation();" aria-label="Listen audio for ${escapeHtml(song.title)}">
+          <svg class="media-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+          </svg>
+          <span>Audio</span>
+        </a>`
+      : `<span class="media-btn audio-btn disabled" title="Audio link not available" aria-disabled="true" aria-label="Audio not available for ${escapeHtml(song.title)}">
+          <svg class="media-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+          </svg>
+          <span>Audio</span>
+        </span>`;
+
+    const hasVideo = Boolean(song.videoUrl && song.videoUrl.trim());
+    const videoBtnHtml = hasVideo
+      ? `<a href="${escapeHtml(song.videoUrl.trim())}" target="_blank" rel="noopener noreferrer" class="media-btn video-btn enabled" title="Watch Video: ${escapeHtml(song.videoUrl.trim())}" onclick="event.stopPropagation();" aria-label="Watch video for ${escapeHtml(song.title)}">
+          <svg class="media-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="4" width="15" height="16" rx="2" ry="2"></rect>
+            <polygon points="17 8 22 12 17 16 17 8"></polygon>
+          </svg>
+          <span>Video</span>
+        </a>`
+      : `<span class="media-btn video-btn disabled" title="Video link not available" aria-disabled="true" aria-label="Video not available for ${escapeHtml(song.title)}">
+          <svg class="media-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="4" width="15" height="16" rx="2" ry="2"></rect>
+            <polygon points="17 8 22 12 17 16 17 8"></polygon>
+          </svg>
+          <span>Video</span>
+        </span>`;
+
     html += `
       <div class="song-card ${isSelected ? 'selected' : ''}" id="song-card-${escapeHtml(song.id)}">
-        <div>
+        <div class="song-card-image-wrap">
+          <img 
+            src="${escapeHtml(displayImg)}" 
+            alt="${escapeHtml(song.title)}" 
+            class="song-card-image ${hasCustomImage ? '' : 'default-logo'}" 
+            loading="lazy" 
+            onerror="this.onerror=null;this.src='${defaultSongImage}';this.classList.add('default-logo');"
+          >
+        </div>
+
+        <div class="song-card-body">
           <div class="song-header-row">
             <label class="custom-checkbox-label" title="Select song" aria-label="Select song ${escapeHtml(song.title)}">
               <input type="checkbox" class="custom-checkbox-input" id="check-${escapeHtml(song.id)}" ${isSelected ? 'checked' : ''} onchange="toggleSongSelection('${escapeHtml(song.id)}')" aria-label="Select song ${escapeHtml(song.title)}">
@@ -446,14 +499,21 @@ function renderSongs() {
               </span>
             </label>
             <div class="song-info">
-              <span class="song-id-badge">${escapeHtml(song.id)}</span>
               <h3 class="song-title">${escapeHtml(song.title)}</h3>
-              
-              <div class="lang-availability" role="group" aria-label="Available languages">
-                <span class="lang-pill tamil ${song.hasTamil ? '' : 'unavailable'}" title="${song.hasTamil ? 'Tamil lyrics available' : 'No Tamil lyrics'}">TA</span>
-                <span class="lang-pill english ${song.hasEnglish ? '' : 'unavailable'}" title="${song.hasEnglish ? 'English lyrics available' : 'No English lyrics'}">EN</span>
-                <span class="lang-pill devanagari ${song.hasDevanagari ? '' : 'unavailable'}" title="${song.hasDevanagari ? 'Devanagari lyrics available' : 'No Devanagari lyrics'}">HI</span>
-              </div>
+              <span class="song-id-badge" style="display: none;" aria-hidden="true">${escapeHtml(song.id)}</span>
+            </div>
+          </div>
+
+          <div class="song-meta-row">
+            <div class="song-media-icons" role="group" aria-label="Media links for ${escapeHtml(song.title)}">
+              ${audioBtnHtml}
+              ${videoBtnHtml}
+            </div>
+            
+            <div class="lang-availability" role="group" aria-label="Available languages">
+              <span class="lang-pill tamil ${song.hasTamil ? '' : 'unavailable'}" title="${song.hasTamil ? 'Tamil lyrics available' : 'No Tamil lyrics'}">TA</span>
+              <span class="lang-pill english ${song.hasEnglish ? '' : 'unavailable'}" title="${song.hasEnglish ? 'English lyrics available' : 'No English lyrics'}">EN</span>
+              <span class="lang-pill devanagari ${song.hasDevanagari ? '' : 'unavailable'}" title="${song.hasDevanagari ? 'Devanagari lyrics available' : 'No Devanagari lyrics'}">HI</span>
             </div>
           </div>
 
