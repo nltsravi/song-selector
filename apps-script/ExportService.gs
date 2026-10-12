@@ -168,7 +168,7 @@ var ExportService = {
     docFile.moveTo(exportFolder);
 
     try {
-      // 1. Setup Header with Logo on the right and horizontal rule below
+      // 1. Setup Header with Logo on the left, horizontal rule below, and center watermark across all pages
       var header = doc.addHeader();
       header.clear();
 
@@ -185,6 +185,51 @@ var ExportService = {
           inlineImg.setHeight(36);
         } catch (imgErr) {
           Logger.log('Error adding logo to header: ' + imgErr);
+        }
+      }
+
+      // Add watermark: Anchored in header so it automatically repeats across ALL pages of the export document
+      var watermarkBlob = this.getWatermarkBlob();
+      if (watermarkBlob) {
+        try {
+          var pageWidth = 612;
+          var pageHeight = 792;
+          var marginLeft = 72;
+          try {
+            var bodyRef = doc.getBody();
+            if (bodyRef) {
+              pageWidth = bodyRef.getPageWidth() || 612;
+              pageHeight = bodyRef.getPageHeight() || 792;
+              marginLeft = bodyRef.getMarginLeft() || 72;
+            }
+          } catch (dimErr) {}
+
+          // Target dimensions on PDF page in points:
+          // Full printable width is 468 pt (6.5 inches)
+          var targetWidthPt = pageWidth - (marginLeft * 2); // 468 pt
+          var targetHeightPt = Math.round(targetWidthPt / 1.2818); // ~365 pt
+
+          // Symmetrical center on page:
+          var targetLeftPt = Math.round((pageWidth - targetWidthPt) / 2); // 72 pt
+          var targetTopPt = Math.round((pageHeight - targetHeightPt) / 2); // 213.5 pt
+
+          var leftOffsetPt = targetLeftPt - marginLeft; // 0 pt
+          // Vertical offset anchored to header paragraph for dead-center placement across all pages
+          var topOffsetPt = targetTopPt - 78;
+
+          // In Google Docs DocumentApp, PositionedImage dimensions and offsets are in 96-DPI pixels.
+          // Google Docs scales pixels by 72/96 (0.75) when exporting to PDF.
+          // Multiply points by 96/72 (4/3) to produce exact points and perfect centering in exported PDF.
+          var ptToPx = 96 / 72;
+
+          var posImg = headerPara.addPositionedImage(watermarkBlob);
+          posImg.setWidth(Math.round(targetWidthPt * ptToPx));
+          posImg.setHeight(Math.round(targetHeightPt * ptToPx));
+          posImg.setLeftOffset(Math.round(leftOffsetPt * ptToPx));
+          posImg.setTopOffset(Math.round(topOffsetPt * ptToPx));
+          posImg.setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT);
+        } catch (wmErr) {
+          Logger.log('Error adding watermark image: ' + wmErr);
         }
       }
 
@@ -226,45 +271,6 @@ var ExportService = {
       // 3. Document Body (First page: Collection Name only below header; removed created by, date, count, language)
       var body = doc.getBody();
       body.clear();
-
-      // Add watermark: Center of the page, image full size, very light colour / subtle opacity (7%)
-      var watermarkBlob = this.getWatermarkBlob();
-      if (watermarkBlob) {
-        try {
-          var pageWidth = body.getPageWidth() || 612;
-          var pageHeight = body.getPageHeight() || 792;
-          var marginLeft = body.getMarginLeft() || 72;
-          var marginTop = body.getMarginTop() || 72;
-
-          // Target dimensions on PDF page in points:
-          // Full printable width is 468 pt (6.5 inches)
-          var targetWidthPt = pageWidth - (marginLeft * 2); // 468 pt
-          var targetHeightPt = Math.round(targetWidthPt / 1.2818); // ~365 pt
-
-          // Symmetrical center on page:
-          var targetLeftPt = Math.round((pageWidth - targetWidthPt) / 2); // 72 pt
-          var targetTopPt = Math.round((pageHeight - targetHeightPt) / 2); // 213.5 pt
-
-          var leftOffsetPt = targetLeftPt - marginLeft; // 0 pt
-          var topOffsetPt = targetTopPt - marginTop; // 141.5 pt
-
-          // In Google Docs DocumentApp, PositionedImage dimensions and offsets are in 96-DPI pixels.
-          // Google Docs scales pixels by 72/96 (0.75) when exporting to PDF.
-          // Multiply points by 96/72 (4/3) to produce exact points and perfect centering in exported PDF.
-          var ptToPx = 96 / 72;
-
-          var wmPara = body.getParagraphs()[0] || body.appendParagraph('');
-          var posImg = wmPara.addPositionedImage(watermarkBlob);
-
-          posImg.setWidth(Math.round(targetWidthPt * ptToPx));
-          posImg.setHeight(Math.round(targetHeightPt * ptToPx));
-          posImg.setLeftOffset(Math.round(leftOffsetPt * ptToPx));
-          posImg.setTopOffset(Math.round(topOffsetPt * ptToPx));
-          posImg.setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT);
-        } catch (wmErr) {
-          Logger.log('Error adding watermark image: ' + wmErr);
-        }
-      }
 
       var titlePara = body.appendParagraph(collection.name);
       try {
