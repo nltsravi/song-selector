@@ -154,7 +154,20 @@ assert(mockBackendCode.includes('<td class="footer-left">© OmkaarSSL</td>'), 'm
 assert(mockBackendCode.includes('<td class="footer-right">${col.name}</td>'), 'mock-backend must have ${col.name} in footer right');
 assert(!mockBackendCode.includes('${col.name} | Page 1'), 'mock-backend must not have | Page 1');
 
-console.log('✓ Export footer format verified: "© OmkaarSSL" on left and collection name on right with no page text.');
+// Assert watermark is enabled in both ExportService and mock-backend
+assert(!exportServiceCode.includes('// Watermark addition commented out for now'), 'ExportService watermark must be enabled');
+assert(exportServiceCode.includes('addPositionedImage(watermarkBlob)'), 'ExportService must add watermark image');
+
+assert(!mockBackendCode.includes('<!-- Watermark commented out for now'), 'mock-backend watermark must be enabled');
+assert(mockBackendCode.includes('<div class="watermark">'), 'mock-backend must include watermark container');
+assert(mockBackendCode.includes('<img src="data:image/png;base64,${watermarkBase64}" alt="Watermark" />'), 'mock-backend must include watermark image');
+
+const logoCode = fs.readFileSync('apps-script/Logo.gs', 'utf8');
+assert(logoCode.includes('LOGO_IMAGE_WATERMARK_BASE64'), 'Logo.gs must define LOGO_IMAGE_WATERMARK_BASE64');
+const publicLogoCode = fs.readFileSync('public/logo-data.js', 'utf8');
+assert(publicLogoCode.includes('LOGO_IMAGE_WATERMARK_BASE64'), 'logo-data.js must define LOGO_IMAGE_WATERMARK_BASE64');
+
+console.log('✓ Export footer & watermark verified: "© OmkaarSSL" footer and light watermark enabled.');
 
 console.log('\n========================================');
 console.log('ALL TESTS PASSED SUCCESSFULLY! (6/6)');
