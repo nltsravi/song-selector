@@ -185,7 +185,19 @@ assert(logoCode.includes('LOGO_IMAGE_WATERMARK_BASE64'), 'Logo.gs must define LO
 const publicLogoCode = fs.readFileSync('public/logo-data.js', 'utf8');
 assert(publicLogoCode.includes('LOGO_IMAGE_WATERMARK_BASE64'), 'logo-data.js must define LOGO_IMAGE_WATERMARK_BASE64');
 
-console.log('✓ Export first page, header collection name on right, footer numbering (page 1 none, page 2+ starts at 1) & watermark verified.');
+// Assert Header & Footer margins and padding are reduced to 0.25in (both)
+assert(mockBackendCode.includes('mso-header-margin: 0.25in;'), 'mock-backend must set mso-header-margin to 0.25in');
+assert(mockBackendCode.includes('mso-footer-margin: 0.25in;'), 'mock-backend must set mso-footer-margin to 0.25in');
+assert(mockBackendCode.includes('.header-table { width: 100%; border-bottom: 1px solid #cbd5e1; margin: 0.25in 0; padding: 0.25in 0; }'), 'mock-backend must set header-table margin and padding to 0.25in');
+assert(mockBackendCode.includes('.footer-table { width: 100%; border-top: 1px solid #cbd5e1; margin: 0.25in 0; padding: 0.25in 0;'), 'mock-backend must set footer-table margin and padding to 0.25in');
+assert(exportServiceCode.includes('marginHeader: { magnitude: 18, unit: \'PT\' }'), 'ExportService must set marginHeader to 18pt (0.25in)');
+assert(exportServiceCode.includes('marginFooter: { magnitude: 18, unit: \'PT\' }'), 'ExportService must set marginFooter to 18pt (0.25in)');
+assert(exportServiceCode.includes('hCell.setPaddingTop(18)'), 'ExportService must set header cell top padding to 18pt (0.25in)');
+assert(exportServiceCode.includes('hCell.setPaddingBottom(18)'), 'ExportService must set header cell bottom padding to 18pt (0.25in)');
+assert(exportServiceCode.includes('fCell.setPaddingTop(18)'), 'ExportService must set footer cell top padding to 18pt (0.25in)');
+assert(exportServiceCode.includes('fCell.setPaddingBottom(18)'), 'ExportService must set footer cell bottom padding to 18pt (0.25in)');
+
+console.log('✓ Export first page, header collection name on right, footer numbering (page 1 none, page 2+ starts at 1), watermark & 0.25 header/footer margin/padding verified.');
 
 // Test 7: CSV Columns, Song Card Layout, Audio/Video Icons, and Favicon
 console.log('\nTest 7: CSV Columns, Song Card Layout, Audio/Video Icons, and Favicon');

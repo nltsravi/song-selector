@@ -185,6 +185,45 @@ var ExportService = {
       var logoBlob = this.getLogoBlob();
       var watermarkBlob = this.getWatermarkBlob();
 
+      // 0. Setup Document Margins (0.25in = 18pt)
+      try {
+        var bodyInit = doc.getBody();
+        if (bodyInit) {
+          bodyInit.setMarginTop(18);
+          bodyInit.setMarginBottom(18);
+        }
+      } catch (marginErr) {
+        Logger.log('Could not set initial body margins: ' + marginErr);
+      }
+
+      // Update header/footer distance and page margins via Docs API batchUpdate
+      try {
+        var docsApiUrl = 'https://docs.googleapis.com/v1/documents/' + doc.getId() + ':batchUpdate';
+        UrlFetchApp.fetch(docsApiUrl, {
+          method: 'post',
+          contentType: 'application/json',
+          headers: {
+            Authorization: 'Bearer ' + ScriptApp.getOAuthToken()
+          },
+          payload: JSON.stringify({
+            requests: [{
+              updateDocumentStyle: {
+                documentStyle: {
+                  marginHeader: { magnitude: 18, unit: 'PT' }, // 0.25 in
+                  marginFooter: { magnitude: 18, unit: 'PT' }, // 0.25 in
+                  marginTop: { magnitude: 18, unit: 'PT' },    // 0.25 in
+                  marginBottom: { magnitude: 18, unit: 'PT' } // 0.25 in
+                },
+                fields: 'marginHeader,marginFooter,marginTop,marginBottom'
+              }
+            }]
+          }),
+          muteHttpExceptions: true
+        });
+      } catch (docsApiErr) {
+        Logger.log('Could not update document header/footer margins via Docs API: ' + docsApiErr);
+      }
+
       // 1. Setup Header across all pages (both first page header and default header)
       // Header has logo on the left, collection name on the right, horizontal rule below,
       // and centered light watermark across all pages.
@@ -212,6 +251,7 @@ var ExportService = {
 
         var headerPara = header.appendParagraph('');
         headerPara.setAlignment(DocumentApp.HorizontalAlignment.LEFT);
+        headerPara.setSpacingBefore(0);
         headerPara.setSpacingAfter(0);
 
         // Watermark: Anchored in header so it automatically repeats centered across all pages
@@ -259,10 +299,22 @@ var ExportService = {
         headerTable.setColumnWidth(0, 234);
         headerTable.setColumnWidth(1, 234);
 
+        // Header padding: 0.25in (18pt)
+        for (var c = 0; c < 2; c++) {
+          try {
+            var hCell = headerTable.getCell(0, c);
+            hCell.setPaddingTop(18);
+            hCell.setPaddingBottom(18);
+            hCell.setPaddingLeft(0);
+            hCell.setPaddingRight(0);
+          } catch (padErr) {}
+        }
+
         if (logoBlob) {
           try {
             var cellLeft = headerTable.getCell(0, 0);
             var pLeft = cellLeft.getChild(0).asParagraph();
+            pLeft.setSpacingBefore(0);
             pLeft.setSpacingAfter(0);
             var inlineImg = pLeft.appendInlineImage(logoBlob);
             inlineImg.setWidth(39);
@@ -274,6 +326,8 @@ var ExportService = {
 
         var cellRight = headerTable.getCell(0, 1);
         var pRight = cellRight.getChild(0).asParagraph();
+        pRight.setSpacingBefore(0);
+        pRight.setSpacingAfter(0);
         pRight.setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
         pRight.setFontSize(9);
         pRight.setForegroundColor('#64748b');
@@ -293,16 +347,70 @@ var ExportService = {
         footerTable.setColumnWidth(0, 234);
         footerTable.setColumnWidth(1, 234);
 
+        // Footer padding: 0.25in (18pt)
+        for (var fc = 0; fc < 2; fc++) {
+          try {
+            var fCell = footerTable.getCell(0, fc);
+            fCell.setPaddingTop(18);
+            fCell.setPaddingBottom(18);
+            fCell.setPaddingLeft(0);
+            fCell.setPaddingRight(0);
+          } catch (fPadErr) {}
+        }
+
         var fCellLeft = footerTable.getCell(0, 0);
         var fPLeft = fCellLeft.getChild(0).asParagraph();
+        fPLeft.setSpacingBefore(0);
+        fPLeft.setSpacingAfter(0);
         fPLeft.setAlignment(DocumentApp.HorizontalAlignment.LEFT);
         fPLeft.setFontSize(9);
         fPLeft.setForegroundColor('#64748b');
+      } else {
+        // Adjust padding for footers configured by template
+        try {
+          var footers = [];
+          var docFooterParent = doc.getFooter() ? doc.getFooter().getParent() : null;
+          if (docFooterParent) {
+            for (var ftIdx = 0; ftIdx < docFooterParent.getNumChildren(); ftIdx++) {
+              var fChild = docFooterParent.getChild(ftIdx);
+              if (fChild.getType() === DocumentApp.ElementType.FOOTER_SECTION) {
+                footers.push(fChild.asFooterSection());
+              }
+            }
+          }
+          if (footers.length === 0 && doc.getFooter()) {
+            footers.push(doc.getFooter());
+          }
+          for (var fI = 0; fI < footers.length; fI++) {
+            var fSec = footers[fI];
+            for (var tIdx = 0; tIdx < fSec.getNumChildren(); tIdx++) {
+              var ch = fSec.getChild(tIdx);
+              if (ch.getType() === DocumentApp.ElementType.TABLE) {
+                var tbl = ch.asTable();
+                for (var r = 0; r < tbl.getNumRows(); r++) {
+                  var row = tbl.getRow(r);
+                  for (var cl = 0; cl < row.getNumCells(); cl++) {
+                    row.getCell(cl).setPaddingTop(18);
+                    row.getCell(cl).setPaddingBottom(18);
+                  }
+                }
+              }
+            }
+          }
+        } catch (tfErr) {
+          Logger.log('Could not update template footer padding: ' + tfErr);
+        }
       }
 
       // 3. Document Body
       var body = doc.getBody();
       body.clear();
+      try {
+        body.setMarginTop(18);
+        body.setMarginBottom(18);
+      } catch (bodyMargErr) {
+        Logger.log('Could not set body margins: ' + bodyMargErr);
+      }
 
       // First Page: Collection name in the center with increased font size
       for (var sp = 0; sp < 6; sp++) {

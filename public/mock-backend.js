@@ -553,15 +553,19 @@
           <head><meta charset='utf-8'><title>${col.name}</title>
           <style>
             @page {
-              margin: 1in;
+              margin: 0.25in 1in;
+              margin-top: 0.25in;
+              margin-bottom: 0.25in;
+              mso-header-margin: 0.25in;
+              mso-footer-margin: 0.25in;
               mso-header: h1;
               mso-footer: f1;
               mso-first-header: fh1;
               mso-first-footer: ff1;
               mso-title-page: yes;
             }
-            body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; margin: 30px; position: relative; }
-            .header-table { width: 100%; border-bottom: 1px solid #cbd5e1; margin-bottom: 24px; padding-bottom: 8px; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; margin: 0.25in 30px; position: relative; }
+            .header-table { width: 100%; border-bottom: 1px solid #cbd5e1; margin: 0.25in 0; padding: 0.25in 0; }
             .header-left { text-align: left; }
             .header-left img { width: 0.54in; height: 0.5in; opacity: 0.9; object-fit: contain; filter: brightness(1.2); }
             .header-right { text-align: right; font-size: 11px; color: #64748b; vertical-align: middle; }
@@ -571,7 +575,7 @@
             .collection-title-cover { text-align: center; color: #0f172a; font-size: 32px; font-weight: bold; }
             h2 { color: #4338ca; margin-top: 24px; }
             .lyrics { white-space: pre-wrap; margin-bottom: 24px; font-size: 14px; line-height: 1.8; }
-            .footer-table { width: 100%; border-top: 1px solid #cbd5e1; margin-top: 36px; padding-top: 8px; font-size: 11px; color: #64748b; }
+            .footer-table { width: 100%; border-top: 1px solid #cbd5e1; margin: 0.25in 0; padding: 0.25in 0; font-size: 11px; color: #64748b; }
             .footer-left { text-align: left; }
             .footer-right { text-align: right; }
           </style>
