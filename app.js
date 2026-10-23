@@ -197,7 +197,7 @@ async function checkAuthentication() {
     }
 
     if (user.isDomainAllowed === false) {
-      renderForbiddenDomainState(user);
+      renderRequestAccessState(user);
       return;
     }
 
@@ -220,35 +220,193 @@ function renderUnauthenticatedState(errorObj) {
   elements.appContent.style.display = 'none';
   elements.userBadge.style.display = 'none';
 
-  const errorTextElem = document.getElementById('auth-error-message');
-  if (errorTextElem && errorObj && errorObj.message) {
-    errorTextElem.textContent = errorObj.message;
+  const authCard = elements.authHero.querySelector('.auth-card');
+  if (authCard) {
+    const errorMsg = (errorObj && errorObj.message) ? errorObj.message : 'Please sign in with your Google account to access the Song Collection & Lyrics Library.';
+    authCard.innerHTML = `
+      <div class="auth-card-icon" aria-hidden="true">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+        </svg>
+      </div>
+      <h2>Sign in required</h2>
+      <p id="auth-error-message">${escapeHtml(errorMsg)}</p>
+      
+      <button type="button" class="btn-google-signin" id="btn-google-login" onclick="window.MockBackend ? window.MockBackend.setSimulatedUser('logged_in_gmail') : window.open('https://accounts.google.com/signin', '_blank')">
+        <svg style="width:18px;height:18px;" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+        </svg>
+        Sign in with Google
+      </button>
+      <div class="domain-note">Enterprise Google Accounts & Gmail supported</div>
+    `;
   }
 }
 
 /**
- * Render Domain Forbidden Screen (Section 6)
+ * Render Request Access Screen (Section 4, 6)
+ * Displayed when user is logged in with their Google/Gmail account but needs library access
  */
-function renderForbiddenDomainState(user) {
+function renderRequestAccessState(user) {
   elements.authHero.style.display = 'flex';
   elements.appContent.style.display = 'none';
   elements.userBadge.style.display = 'none';
 
   const authCard = elements.authHero.querySelector('.auth-card');
-  if (authCard) {
+  if (!authCard) return;
+
+  const email = (user && user.email) ? user.email : '';
+  const isPending = Boolean(user && user.hasPendingRequest);
+
+  if (isPending) {
     authCard.innerHTML = `
-      <div class="auth-card-icon" style="background:rgba(244,63,94,0.15); border-color:rgba(244,63,94,0.3); color:#f43f5e;">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+      <div class="auth-card-icon" style="background:#fef3c7; border-color:#fde68a; color:#d97706;">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
       </div>
-      <h2>Access Restricted</h2>
-      <p style="color:#fca5a5;">${escapeHtml(user.error ? user.error.message : 'Your account domain is not authorized.')}</p>
-      <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.5rem;">Signed in as: <strong>${escapeHtml(user.email)}</strong></div>
-      <a href="https://accounts.google.com/AccountChooser" target="_blank" class="btn-google-signin" style="background:#f8fafc; color:#0f172a;">
-        Switch Google Account
-      </a>
+      <h2>Access Request Pending</h2>
+      <p style="margin-bottom:0.75rem;">Your request for library access is currently awaiting administrator review.</p>
+      
+      <div class="user-pill-highlight">
+        <span class="user-pill-dot" style="background:#f59e0b; box-shadow:0 0 0 2px rgba(245,158,11,0.25);"></span>
+        <span>Signed in as: <strong>${escapeHtml(email)}</strong></span>
+      </div>
+
+      <div class="access-info-box">
+        <div style="font-weight:600; color:#1e293b; font-size:0.9rem; margin-bottom:0.25rem;">
+          <svg style="width:16px;height:16px;display:inline-block;vertical-align:-2px;color:#f59e0b;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          Status: Review in Progress
+        </div>
+        <div style="font-size:0.85rem; color:var(--text-muted);">
+          Submitted: ${escapeHtml(user.requestDate || 'Recently')}
+        </div>
+        <div style="font-size:0.8rem; color:var(--text-dim); margin-top:0.5rem; line-height:1.4;">
+          Once the administrator approves your request in the Google Sheet, clicking "Check Access Status" will immediately take you into the library.
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:0.75rem; width:100%; margin-top:1rem;">
+        <button type="button" class="btn-primary btn-request-access" id="btn-refresh-status" onclick="window.checkAuthStatus()">
+          <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <span>Check Access Status / Refresh</span>
+        </button>
+
+        <a href="https://accounts.google.com/AccountChooser" target="_blank" class="btn-google-signin" style="background:#f8fafc; color:#0f172a; text-decoration:none;">
+          Switch Google Account
+        </a>
+      </div>
+    `;
+  } else {
+    authCard.innerHTML = `
+      <div class="auth-card-icon" style="background:rgba(99,102,241,0.12); border-color:rgba(99,102,241,0.25); color:var(--primary);">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+        </svg>
+      </div>
+      <h2>Request Library Access</h2>
+      <p style="margin-bottom:0.75rem;">You need permission to access the Song Collection & Lyrics Library. Submit an access request for your Google account below:</p>
+
+      <div class="user-pill-highlight">
+        <span class="user-pill-dot"></span>
+        <span>Signed in as: <strong>${escapeHtml(email)}</strong></span>
+      </div>
+
+      <div class="access-form-wrapper" style="width:100%; margin-top:0.75rem; text-align:left;">
+        <label for="access-reason-input" style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-secondary); margin-bottom:0.4rem;">
+          Note or Reason for Access (Optional)
+        </label>
+        <input type="text" id="access-reason-input" class="access-reason-input" placeholder="e.g. Choir member, worship leader..." maxlength="150" />
+        
+        <button type="button" class="btn-primary btn-request-access" id="btn-submit-access-request" onclick="window.submitAccessRequest()">
+          <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+          </svg>
+          <span>Request Access for ${escapeHtml(email)}</span>
+        </button>
+
+        <div style="text-align:center; margin-top:1.25rem;">
+          <a href="https://accounts.google.com/AccountChooser" target="_blank" style="font-size:0.85rem; color:var(--text-muted); text-decoration:none;">
+            Want to use another account? <strong style="color:var(--primary);">Switch Account</strong>
+          </a>
+        </div>
+      </div>
     `;
   }
 }
+
+/**
+ * Handle Access Request Submission
+ */
+window.submitAccessRequest = async function() {
+  const btn = document.getElementById('btn-submit-access-request');
+  const input = document.getElementById('access-reason-input');
+  const reason = input ? input.value.trim() : '';
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `
+      <span class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:6px;"></span>
+      <span>Submitting request...</span>
+    `;
+  }
+
+  try {
+    await API.call('apiSubmitAccessRequest', reason);
+    showToast('Access request submitted! Waiting for administrator review.', 'success');
+    await checkAuthentication();
+  } catch (err) {
+    console.error('Failed to submit access request:', err);
+    showToast('Failed to submit request: ' + (err.message || 'Please try again.'), 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `
+        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+        </svg>
+        <span>Try Again</span>
+      `;
+    }
+  }
+};
+
+/**
+ * Check Access Status and Refresh
+ */
+window.checkAuthStatus = async function() {
+  const btn = document.getElementById('btn-refresh-status');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `
+      <span class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:6px;"></span>
+      <span>Checking status...</span>
+    `;
+  }
+
+  try {
+    await checkAuthentication();
+    if (state.currentUser && !state.currentUser.isDomainAllowed) {
+      showToast('Your request is still awaiting administrator review.', 'info');
+    }
+  } catch (e) {
+    showToast('Error checking status: ' + e.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `
+        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        <span>Check Access Status / Refresh</span>
+      `;
+    }
+  }
+};
 
 /**
  * Render Authenticated Screen
