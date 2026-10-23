@@ -61,6 +61,8 @@
       <select id="sim-user-select" class="sim-select" onchange="window.MockBackend.setSimulatedUser(this.value)">
         <option value="logged_in_gmail">Logged In (user@example.com)</option>
         <option value="logged_in_tirwin">Workspace Domain (sarah@tirwin.in)</option>
+        <option value="gmail_unauthorized">Gmail Logged In (johndoe@gmail.com - Request Access)</option>
+        <option value="gmail_pending">Gmail Pending Approval (johndoe@gmail.com)</option>
         <option value="unauthorized_domain">Unauthorized Domain (outsider@otherdomain.com)</option>
         <option value="unauthenticated">Unauthenticated (Sign-in Required)</option>
       </select>

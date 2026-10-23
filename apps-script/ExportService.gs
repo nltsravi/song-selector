@@ -196,34 +196,6 @@ var ExportService = {
         Logger.log('Could not set initial body margins: ' + marginErr);
       }
 
-      // Update header/footer distance and page margins via Docs API batchUpdate
-      try {
-        var docsApiUrl = 'https://docs.googleapis.com/v1/documents/' + doc.getId() + ':batchUpdate';
-        UrlFetchApp.fetch(docsApiUrl, {
-          method: 'post',
-          contentType: 'application/json',
-          headers: {
-            Authorization: 'Bearer ' + ScriptApp.getOAuthToken()
-          },
-          payload: JSON.stringify({
-            requests: [{
-              updateDocumentStyle: {
-                documentStyle: {
-                  marginHeader: { magnitude: 18, unit: 'PT' }, // 0.25 in
-                  marginFooter: { magnitude: 18, unit: 'PT' }, // 0.25 in
-                  marginTop: { magnitude: 18, unit: 'PT' },    // 0.25 in
-                  marginBottom: { magnitude: 18, unit: 'PT' } // 0.25 in
-                },
-                fields: 'marginHeader,marginFooter,marginTop,marginBottom'
-              }
-            }]
-          }),
-          muteHttpExceptions: true
-        });
-      } catch (docsApiErr) {
-        Logger.log('Could not update document header/footer margins via Docs API: ' + docsApiErr);
-      }
-
       // 1. Setup Header across all pages (both first page header and default header)
       // Header has logo on the left, collection name on the right, horizontal rule below,
       // and centered light watermark across all pages.
@@ -249,10 +221,61 @@ var ExportService = {
         var header = headers[hI];
         header.clear();
 
-        var headerPara = header.appendParagraph('');
-        headerPara.setAlignment(DocumentApp.HorizontalAlignment.LEFT);
-        headerPara.setSpacingBefore(0);
-        headerPara.setSpacingAfter(0);
+        // Header Table is appended FIRST so it sits directly at the top of the header with zero empty space above
+        var headerTable = header.appendTable([
+          ['', collection.name]
+        ]);
+        headerTable.setBorderWidth(0);
+        headerTable.setColumnWidth(0, 234);
+        headerTable.setColumnWidth(1, 234);
+
+        var cellLeft = headerTable.getCell(0, 0);
+        var cellRight = headerTable.getCell(0, 1);
+
+        // Align both cells to BOTTOM so logo and collection name sit right above the horizontal rule
+        cellLeft.setVerticalAlignment(DocumentApp.VerticalAlignment.BOTTOM);
+        cellRight.setVerticalAlignment(DocumentApp.VerticalAlignment.BOTTOM);
+
+        // Zero top padding to remove gap above logo; minimal bottom padding (2pt) to sit snug above rule
+        cellLeft.setPaddingTop(0);
+        cellLeft.setPaddingBottom(2);
+        cellLeft.setPaddingLeft(0);
+        cellLeft.setPaddingRight(0);
+
+        cellRight.setPaddingTop(0);
+        cellRight.setPaddingBottom(2);
+        cellRight.setPaddingLeft(0);
+        cellRight.setPaddingRight(0);
+
+        if (logoBlob) {
+          try {
+            var pLeft = cellLeft.getChild(0).asParagraph();
+            pLeft.setSpacingBefore(0);
+            pLeft.setSpacingAfter(0);
+            var inlineImg = pLeft.appendInlineImage(logoBlob);
+            inlineImg.setWidth(39);
+            inlineImg.setHeight(36);
+          } catch (imgErr) {
+            Logger.log('Error adding logo to header: ' + imgErr);
+          }
+        }
+
+        var pRight = cellRight.getChild(0).asParagraph();
+        pRight.setSpacingBefore(0);
+        pRight.setSpacingAfter(0);
+        pRight.setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
+        pRight.setFontSize(9);
+        pRight.setForegroundColor('#64748b');
+
+        // Horizontal line
+        header.appendHorizontalRule();
+
+        // Watermark anchor paragraph: Placed AFTER the header table and rule, with font size 1 so it consumes no vertical space
+        var wmPara = header.appendParagraph('');
+        wmPara.setFontSize(1);
+        wmPara.setSpacingBefore(0);
+        wmPara.setSpacingAfter(0);
+        wmPara.setLineSpacing(0.01);
 
         // Watermark: Anchored in header so it automatically repeats centered across all pages
         if (watermarkBlob) {
@@ -276,11 +299,11 @@ var ExportService = {
             var targetTopPt = Math.round((pageHeight - targetHeightPt) / 2); // 213.5 pt
 
             var leftOffsetPt = targetLeftPt - marginLeft; // 0 pt
-            var topOffsetPt = targetTopPt - 78;
+            var topOffsetPt = targetTopPt - 54;
 
             var ptToPx = 96 / 72;
 
-            var posImg = headerPara.addPositionedImage(watermarkBlob);
+            var posImg = wmPara.addPositionedImage(watermarkBlob);
             posImg.setWidth(Math.round(targetWidthPt * ptToPx));
             posImg.setHeight(Math.round(targetHeightPt * ptToPx));
             posImg.setLeftOffset(Math.round(leftOffsetPt * ptToPx));
@@ -290,49 +313,6 @@ var ExportService = {
             Logger.log('Error adding watermark image: ' + wmErr);
           }
         }
-
-        // Header Table: Logo on left, Collection Name on right side
-        var headerTable = header.appendTable([
-          ['', collection.name]
-        ]);
-        headerTable.setBorderWidth(0);
-        headerTable.setColumnWidth(0, 234);
-        headerTable.setColumnWidth(1, 234);
-
-        // Header padding: 0.25in (18pt)
-        for (var c = 0; c < 2; c++) {
-          try {
-            var hCell = headerTable.getCell(0, c);
-            hCell.setPaddingTop(18);
-            hCell.setPaddingBottom(18);
-            hCell.setPaddingLeft(0);
-            hCell.setPaddingRight(0);
-          } catch (padErr) {}
-        }
-
-        if (logoBlob) {
-          try {
-            var cellLeft = headerTable.getCell(0, 0);
-            var pLeft = cellLeft.getChild(0).asParagraph();
-            pLeft.setSpacingBefore(0);
-            pLeft.setSpacingAfter(0);
-            var inlineImg = pLeft.appendInlineImage(logoBlob);
-            inlineImg.setWidth(39);
-            inlineImg.setHeight(36);
-          } catch (imgErr) {
-            Logger.log('Error adding logo to header: ' + imgErr);
-          }
-        }
-
-        var cellRight = headerTable.getCell(0, 1);
-        var pRight = cellRight.getChild(0).asParagraph();
-        pRight.setSpacingBefore(0);
-        pRight.setSpacingAfter(0);
-        pRight.setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
-        pRight.setFontSize(9);
-        pRight.setForegroundColor('#64748b');
-
-        header.appendHorizontalRule();
       }
 
       // 2. Setup Footer (If not already configured by template)
@@ -347,12 +327,12 @@ var ExportService = {
         footerTable.setColumnWidth(0, 234);
         footerTable.setColumnWidth(1, 234);
 
-        // Footer padding: 0.25in (18pt)
         for (var fc = 0; fc < 2; fc++) {
           try {
             var fCell = footerTable.getCell(0, fc);
-            fCell.setPaddingTop(18);
-            fCell.setPaddingBottom(18);
+            fCell.setVerticalAlignment(DocumentApp.VerticalAlignment.TOP);
+            fCell.setPaddingTop(2);
+            fCell.setPaddingBottom(0);
             fCell.setPaddingLeft(0);
             fCell.setPaddingRight(0);
           } catch (fPadErr) {}
@@ -390,8 +370,10 @@ var ExportService = {
                 for (var r = 0; r < tbl.getNumRows(); r++) {
                   var row = tbl.getRow(r);
                   for (var cl = 0; cl < row.getNumCells(); cl++) {
-                    row.getCell(cl).setPaddingTop(18);
-                    row.getCell(cl).setPaddingBottom(18);
+                    var cCell = row.getCell(cl);
+                    cCell.setVerticalAlignment(DocumentApp.VerticalAlignment.TOP);
+                    cCell.setPaddingTop(2);
+                    cCell.setPaddingBottom(0);
                   }
                 }
               }
@@ -449,6 +431,27 @@ var ExportService = {
       }
 
       doc.saveAndClose();
+
+      // Update document margins (marginHeader, marginFooter, marginTop, marginBottom) to 0.25in (18pt) using Docs Advanced Service
+      try {
+        if (typeof Docs !== 'undefined' && Docs.Documents) {
+          Docs.Documents.batchUpdate({
+            requests: [{
+              updateDocumentStyle: {
+                documentStyle: {
+                  marginHeader: { magnitude: 18, unit: 'PT' }, // 0.25 in
+                  marginFooter: { magnitude: 18, unit: 'PT' }, // 0.25 in
+                  marginTop: { magnitude: 18, unit: 'PT' },    // 0.25 in
+                  marginBottom: { magnitude: 18, unit: 'PT' } // 0.25 in
+                },
+                fields: 'marginHeader,marginFooter,marginTop,marginBottom'
+              }
+            }]
+          }, doc.getId());
+        }
+      } catch (docsErr) {
+        Logger.log('Could not update document style via Docs Advanced Service: ' + docsErr);
+      }
 
       var exportBlob = null;
       var mimeType = '';

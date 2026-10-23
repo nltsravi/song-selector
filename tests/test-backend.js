@@ -185,19 +185,19 @@ assert(logoCode.includes('LOGO_IMAGE_WATERMARK_BASE64'), 'Logo.gs must define LO
 const publicLogoCode = fs.readFileSync('public/logo-data.js', 'utf8');
 assert(publicLogoCode.includes('LOGO_IMAGE_WATERMARK_BASE64'), 'logo-data.js must define LOGO_IMAGE_WATERMARK_BASE64');
 
-// Assert Header & Footer margins and padding are reduced to 0.25in (both)
+// Assert Header & Footer margins and padding are reduced to eliminate white space
 assert(mockBackendCode.includes('mso-header-margin: 0.25in;'), 'mock-backend must set mso-header-margin to 0.25in');
 assert(mockBackendCode.includes('mso-footer-margin: 0.25in;'), 'mock-backend must set mso-footer-margin to 0.25in');
-assert(mockBackendCode.includes('.header-table { width: 100%; border-bottom: 1px solid #cbd5e1; margin: 0.25in 0; padding: 0.25in 0; }'), 'mock-backend must set header-table margin and padding to 0.25in');
-assert(mockBackendCode.includes('.footer-table { width: 100%; border-top: 1px solid #cbd5e1; margin: 0.25in 0; padding: 0.25in 0;'), 'mock-backend must set footer-table margin and padding to 0.25in');
+assert(mockBackendCode.includes('.header-table { width: 100%; border-bottom: 1px solid #cbd5e1; margin: 0 0 8px 0; padding: 0; }'), 'mock-backend must eliminate header-table extra padding and margin');
+assert(mockBackendCode.includes('.header-right { text-align: right; font-size: 11px; color: #64748b; vertical-align: bottom;'), 'mock-backend must bottom-align collection name');
 assert(exportServiceCode.includes('marginHeader: { magnitude: 18, unit: \'PT\' }'), 'ExportService must set marginHeader to 18pt (0.25in)');
 assert(exportServiceCode.includes('marginFooter: { magnitude: 18, unit: \'PT\' }'), 'ExportService must set marginFooter to 18pt (0.25in)');
-assert(exportServiceCode.includes('hCell.setPaddingTop(18)'), 'ExportService must set header cell top padding to 18pt (0.25in)');
-assert(exportServiceCode.includes('hCell.setPaddingBottom(18)'), 'ExportService must set header cell bottom padding to 18pt (0.25in)');
-assert(exportServiceCode.includes('fCell.setPaddingTop(18)'), 'ExportService must set footer cell top padding to 18pt (0.25in)');
-assert(exportServiceCode.includes('fCell.setPaddingBottom(18)'), 'ExportService must set footer cell bottom padding to 18pt (0.25in)');
+assert(exportServiceCode.includes('cellLeft.setVerticalAlignment(DocumentApp.VerticalAlignment.BOTTOM)'), 'ExportService must bottom-align logo cell');
+assert(exportServiceCode.includes('cellRight.setVerticalAlignment(DocumentApp.VerticalAlignment.BOTTOM)'), 'ExportService must bottom-align collection name cell');
+assert(exportServiceCode.includes('cellLeft.setPaddingTop(0)'), 'ExportService must set zero top padding for logo cell');
+assert(exportServiceCode.includes('cellRight.setPaddingTop(0)'), 'ExportService must set zero top padding for title cell');
 
-console.log('✓ Export first page, header collection name on right, footer numbering (page 1 none, page 2+ starts at 1), watermark & 0.25 header/footer margin/padding verified.');
+console.log('✓ Export first page, header collection name on right, footer numbering (page 1 none, page 2+ starts at 1), watermark & reduced header/footer white space verified.');
 
 // Test 7: CSV Columns, Song Card Layout, Audio/Video Icons, and Favicon
 console.log('\nTest 7: CSV Columns, Song Card Layout, Audio/Video Icons, and Favicon');
@@ -253,7 +253,37 @@ assert(stylesCss.includes('.media-btn.video-btn.enabled'), 'styles.css must styl
 
 console.log('✓ CSV columns, song card image on top, hidden ID, checkbox placement, media icons, and favicon verified.');
 
+// Test 8: Request Access System, Sheet Structure & UI State
+console.log('\nTest 8: Request Access System, Sheet Structure & UI State');
+const configGs = fs.readFileSync('apps-script/Config.gs', 'utf8');
+assert(configGs.includes("ACCESS_REQUESTS_SHEET: 'AccessRequests'"), 'Config.gs must define ACCESS_REQUESTS_SHEET');
+
+const setupGs = fs.readFileSync('apps-script/SetupSheet.gs', 'utf8');
+assert(setupGs.includes('AccessRequests'), 'SetupSheet.gs must reference AccessRequests sheet');
+assert(setupGs.includes('Request ID') && setupGs.includes('Email') && setupGs.includes('Status'), 'SetupSheet.gs must initialize AccessRequests columns');
+
+const authGs = fs.readFileSync('apps-script/Auth.gs', 'utf8');
+assert(authGs.includes('getUserRequestStatus'), 'Auth.gs must implement getUserRequestStatus');
+assert(authGs.includes('submitAccessRequest'), 'Auth.gs must implement submitAccessRequest');
+assert(authGs.includes('ACCESS_REQUESTS_SHEET'), 'Auth.gs must reference ACCESS_REQUESTS_SHEET');
+
+const codeGs = fs.readFileSync('apps-script/Code.gs', 'utf8');
+assert(codeGs.includes('apiSubmitAccessRequest'), 'Code.gs must expose apiSubmitAccessRequest endpoint');
+
+assert(jsHtmlCode.includes('renderRequestAccessState'), 'javascript.html must implement renderRequestAccessState');
+assert(jsHtmlCode.includes('user-pill-highlight'), 'javascript.html must include user-pill-highlight');
+assert(jsHtmlCode.includes('submitAccessRequest'), 'javascript.html must implement submitAccessRequest');
+
+const appJs = fs.readFileSync('public/app.js', 'utf8');
+assert(appJs.includes('renderRequestAccessState'), 'public/app.js must implement renderRequestAccessState');
+assert(appJs.includes('user-pill-highlight'), 'public/app.js must include user-pill-highlight');
+
+assert(stylesCss.includes('.user-pill-highlight'), 'styles.css must style .user-pill-highlight');
+assert(stylesCss.includes('.btn-request-access'), 'styles.css must style .btn-request-access');
+
+console.log('✓ Request Access sheet structure, backend endpoints, UI components, and styles verified.');
+
 console.log('\n========================================');
-console.log('ALL TESTS PASSED SUCCESSFULLY! (7/7)');
+console.log('ALL TESTS PASSED SUCCESSFULLY! (8/8)');
 console.log('========================================\n');
 

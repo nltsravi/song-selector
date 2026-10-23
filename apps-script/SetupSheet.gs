@@ -131,5 +131,28 @@ function populateSampleSongsAndStructure() {
   histRange.setFontColor('#ffffff');
   histSheet.setFrozenRows(1);
 
-  Logger.log('Spreadsheet successfully initialized with Songs, Collections, and ExportHistory!');
+  // 4. Setup Access Requests Sheet
+  var reqSheet = spreadsheet.getSheetByName(CONFIG.ACCESS_REQUESTS_SHEET || 'AccessRequests');
+  if (!reqSheet) {
+    reqSheet = spreadsheet.insertSheet(CONFIG.ACCESS_REQUESTS_SHEET || 'AccessRequests');
+  }
+  reqSheet.clear();
+  var reqHeaders = [
+    'Request ID',
+    'Email',
+    'Request Date',
+    'Request Timestamp',
+    'Status',
+    'Reason',
+    'Reviewed At',
+    'Reviewed By'
+  ];
+  reqSheet.appendRow(reqHeaders);
+  var reqRange = reqSheet.getRange(1, 1, 1, reqHeaders.length);
+  reqRange.setFontWeight('bold');
+  reqRange.setBackground('#0f172a');
+  reqRange.setFontColor('#ffffff');
+  reqSheet.setFrozenRows(1);
+
+  Logger.log('Spreadsheet successfully initialized with Songs, Collections, ExportHistory, and AccessRequests!');
 }

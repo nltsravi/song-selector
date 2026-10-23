@@ -282,15 +282,44 @@
           isDomainAllowed: true,
           error: null
         };
+      } else if (userType === 'gmail_unauthorized') {
+        activeSimulatedUser = {
+          isAuthenticated: true,
+          email: 'johndoe@gmail.com',
+          domain: 'gmail.com',
+          isDomainAllowed: false,
+          hasPendingRequest: false,
+          allowedDomain: 'tirwin.in',
+          error: {
+            code: 'ACCESS_REQUIRED',
+            message: 'You need permission to access the Song Collection & Lyrics Library.'
+          }
+        };
+      } else if (userType === 'gmail_pending') {
+        activeSimulatedUser = {
+          isAuthenticated: true,
+          email: 'johndoe@gmail.com',
+          domain: 'gmail.com',
+          isDomainAllowed: false,
+          hasPendingRequest: true,
+          requestDate: getKolkataDate(),
+          allowedDomain: 'tirwin.in',
+          error: {
+            code: 'ACCESS_PENDING',
+            message: 'Your access request for johndoe@gmail.com is currently pending review by the administrator.'
+          }
+        };
       } else if (userType === 'unauthorized_domain') {
         activeSimulatedUser = {
           isAuthenticated: true,
           email: 'outsider@otherdomain.com',
           domain: 'otherdomain.com',
           isDomainAllowed: false,
+          hasPendingRequest: false,
+          allowedDomain: 'tirwin.in',
           error: {
-            code: 'FORBIDDEN',
-            message: 'Access is restricted to @tirwin.in accounts. Your account (outsider@otherdomain.com) is not permitted.'
+            code: 'ACCESS_REQUIRED',
+            message: 'You need permission to access the Song Collection & Lyrics Library.'
           }
         };
       } else if (userType === 'unauthenticated') {
@@ -299,6 +328,7 @@
           email: null,
           domain: null,
           isDomainAllowed: false,
+          hasPendingRequest: false,
           error: {
             code: 'UNAUTHORIZED',
             message: 'Please sign in with your Google account to access the Song Collection & Lyrics Library.'
@@ -315,6 +345,26 @@
 
     apiGetCurrentUser: function() {
       return activeSimulatedUser;
+    },
+
+    apiSubmitAccessRequest: function(reason) {
+      if (!activeSimulatedUser.isAuthenticated || !activeSimulatedUser.email) {
+        throw new Error('Authentication required to submit an access request.');
+      }
+      activeSimulatedUser.hasPendingRequest = true;
+      activeSimulatedUser.requestDate = getKolkataDate();
+      activeSimulatedUser.error = {
+        code: 'ACCESS_PENDING',
+        message: 'Your access request for ' + activeSimulatedUser.email + ' is currently pending review by the administrator.'
+      };
+      localStorage.setItem('SIMULATED_USER', JSON.stringify(activeSimulatedUser));
+      return {
+        success: true,
+        requestId: 'REQ-' + Date.now(),
+        email: activeSimulatedUser.email,
+        status: 'PENDING',
+        message: 'Access request submitted successfully for ' + activeSimulatedUser.email + '.'
+      };
     },
 
     apiGetSongs: function() {
@@ -565,19 +615,19 @@
               mso-title-page: yes;
             }
             body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; margin: 0.25in 30px; position: relative; }
-            .header-table { width: 100%; border-bottom: 1px solid #cbd5e1; margin: 0.25in 0; padding: 0.25in 0; }
-            .header-left { text-align: left; }
-            .header-left img { width: 0.54in; height: 0.5in; opacity: 0.9; object-fit: contain; filter: brightness(1.2); }
-            .header-right { text-align: right; font-size: 11px; color: #64748b; vertical-align: middle; }
+            .header-table { width: 100%; border-bottom: 1px solid #cbd5e1; margin: 0 0 8px 0; padding: 0; }
+            .header-left { text-align: left; vertical-align: bottom; padding: 0; }
+            .header-left img { width: 0.54in; height: 0.5in; opacity: 0.9; object-fit: contain; filter: brightness(1.2); display: block; margin: 0; }
+            .header-right { text-align: right; font-size: 11px; color: #64748b; vertical-align: bottom; padding: 0 0 2px 0; }
             .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); opacity: 1; z-index: -1000; pointer-events: none; text-align: center; width: 80%; max-width: 600px; }
             .watermark img { width: 100%; height: auto; opacity: 1; display: block; margin: 0 auto; filter: brightness(1.0) contrast(1.0); }
             .first-page-body { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 55vh; margin: 100px 0; text-align: center; }
             .collection-title-cover { text-align: center; color: #0f172a; font-size: 32px; font-weight: bold; }
             h2 { color: #4338ca; margin-top: 24px; }
             .lyrics { white-space: pre-wrap; margin-bottom: 24px; font-size: 14px; line-height: 1.8; }
-            .footer-table { width: 100%; border-top: 1px solid #cbd5e1; margin: 0.25in 0; padding: 0.25in 0; font-size: 11px; color: #64748b; }
-            .footer-left { text-align: left; }
-            .footer-right { text-align: right; }
+            .footer-table { width: 100%; border-top: 1px solid #cbd5e1; margin: 12px 0 0 0; padding: 0; font-size: 11px; color: #64748b; }
+            .footer-left { text-align: left; vertical-align: top; padding: 2px 0 0 0; }
+            .footer-right { text-align: right; vertical-align: top; padding: 2px 0 0 0; }
           </style>
           </head>
           <body>

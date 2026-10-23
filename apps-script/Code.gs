@@ -49,6 +49,19 @@ function apiGetCurrentUser() {
 }
 
 /**
+ * Submits an access request for the authenticated user
+ */
+function apiSubmitAccessRequest(reason) {
+  try {
+    var result = AuthService.submitAccessRequest(reason);
+    return ResponseHelper.success(result);
+  } catch (err) {
+    Logger.log('apiSubmitAccessRequest error: ' + err);
+    return ResponseHelper.error('ACCESS_REQUEST_ERROR', err.message);
+  }
+}
+
+/**
  * Loads songs dynamically from Google Sheets (Section 10, 42, 43)
  */
 function apiGetSongs() {

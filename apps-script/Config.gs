@@ -10,6 +10,7 @@ const CONFIG = {
   SONGS_SHEET: 'Songs',
   COLLECTIONS_SHEET: 'Collections',
   EXPORT_HISTORY_SHEET: 'ExportHistory',
+  ACCESS_REQUESTS_SHEET: 'AccessRequests',
 
   // Domain restriction settings (Section 6)
   // When REQUIRE_DOMAIN_RESTRICTION is true, only emails ending in @ALLOWED_DOMAIN are permitted
