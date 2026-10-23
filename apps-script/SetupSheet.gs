@@ -19,6 +19,9 @@ function populateSampleSongsAndStructure() {
   var songHeaders = [
     'Song ID',
     'Song Title',
+    'English Title',
+    'Tamil Title',
+    'Hindi Title',
     'Tamil Lyrics',
     'English Lyrics',
     'Devanagari Lyrics',
@@ -45,6 +48,9 @@ function populateSampleSongsAndStructure() {
     [
       'S001',
       'Morning Worship (காலை ஆராதனை)',
+      'Morning Worship',
+      'காலை ஆராதனை',
+      'सुबह की आराधना',
       'காலை நேரம் உம் பாதம் வந்தேன்\nகர்த்தாவே உம் கிருபையைத் தந்தருளும்\nபுது நாளின் தொடக்கத்தில் உம்மைப் பாடுவேன்\nஎன் வாழ்வின் வழிகாட்டி நீர் அல்லவோ!\n\nபல்லவி:\nஅல்லேலூயா உம்மைத் துதிப்பேன்\nஎன்றென்றும் உம்மைப் போற்றுவேன்\nகாலைதோறும் உம் கிருபைகள் புதிதாம்\nஉண்மைத்துவத்தில் பெரியவர் நீர்!',
       'Early in the morning I come to Your presence\nLord grant me Your boundless grace\nAt the dawn of this brand new day I will sing\nFor You are the trusted guide of my life!\n\nChorus:\nHallelujah I will praise Your name\nForever and ever I will lift You high\nYour mercies are new every morning\nGreat is Your faithfulness, O Lord!',
       'सुबह सवेरे तेरे चरणों में आते हैं\nप्रभु अपनी असीम अनुग्रह हमें दीजिए\nइस नए दिन की शुरुआत में हम गाएंगे\nक्योंकि तू ही हमारे जीवन का सच्चा मार्गदर्शक है!\n\nकोरस:\nहाल्लेलूयाह हम तेरी स्तुति करेंगे\nसदा सर्वदा तेरा गुणगान करेंगे\nतेरी दया हर सुबह नई होती है\nतेरी सच्चाई कितनी महान है!',
@@ -60,6 +66,9 @@ function populateSampleSongsAndStructure() {
     [
       'S002',
       'Prayer for Peace (சமாதானத்தின் பாடல்)',
+      'Prayer for Peace',
+      'சமாதானத்தின் பாடல்',
+      'शांति की प्रार्थना',
       'சமாதானம் தரும் தேவ மைந்தனே\nஎன் உள்ளத்தில் அமைதி அருளுமே\nபுயல் வீசும் காலத்திலும் காப்பவரே\nஉம் நிழலில் நான் தங்கி வாழ்வேனே!\n\nபல்லவி:\nஅமைதி தரும் உந்தன் சத்தம் கேட்குதே\nபயம் நீங்கி உள்ளம் மகிழுதே\nஎன்னைத் தாங்கும் கரம் உந்தன் கரமே\nஎன்றென்றும் நான் உம்மில் வாழ்வேன்!',
       'Prince of Peace, Divine Savior\nBestow peace into my troubled heart\nEven when fierce storms rage around me\nIn Your shadow I will find my rest!\n\nChorus:\nYour gentle whisper brings sweet peace\nAll fears vanish and my soul rejoices\nThe hand that upholds me is Your loving hand\nForever in You I shall dwell!',
       'शांति के राजकुमार, प्यारे प्रभु\nमेरे अशांत मन को शांति दीजिए\nजब भी तूफ़ान जीवन में आते हैं\nतेरी छाया में मुझे विश्राम मिलता है!\n\nकोरस:\nतेरी मधुर आवाज़ शांति लाती है\nहर डर दूर होता है और दिल गाता है\nजो हाथ मुझे संभालता है वह तेरा ही हाथ है\nसदा तेरे साथ मैं रहूँगा!',

@@ -21,7 +21,8 @@ const state = {
   activeCollection: null,
   exportModalData: null,
   isLoadingSongs: false,
-  isLoadingCollections: false
+  isLoadingCollections: false,
+  songsViewMode: 'card' // 'card' (default) or 'list' (2-column layout)
 };
 
 // UI Elements Cache
@@ -180,8 +181,67 @@ function adjustEmbedHeight() {
 async function initApp() {
   checkEmbeddedMode();
   setupEventListeners();
+  initSongsViewMode();
   await checkAuthentication();
   setTimeout(adjustEmbedHeight, 300);
+}
+
+/**
+ * Initialize Songs View Mode (Card vs List View)
+ * Defaults to card view. User preference is persisted.
+ */
+function initSongsViewMode() {
+  let savedMode = 'card';
+  try {
+    const stored = localStorage.getItem('song_selector_view_mode');
+    if (stored === 'list' || stored === 'card') {
+      savedMode = stored;
+    }
+  } catch (e) {}
+  state.songsViewMode = savedMode;
+  applySongsViewMode();
+}
+
+/**
+ * Switch Songs View Mode ('card' or 'list')
+ */
+window.switchSongsView = function(mode) {
+  state.songsViewMode = (mode === 'list') ? 'list' : 'card';
+  try {
+    localStorage.setItem('song_selector_view_mode', state.songsViewMode);
+  } catch (e) {}
+  applySongsViewMode();
+};
+
+/**
+ * Apply current view mode to #songs-grid and toggle buttons
+ */
+function applySongsViewMode() {
+  const isList = state.songsViewMode === 'list';
+  if (elements.songsGrid) {
+    if (isList) {
+      elements.songsGrid.classList.add('view-list');
+    } else {
+      elements.songsGrid.classList.remove('view-list');
+    }
+  }
+
+  const cardBtn = document.getElementById('btn-view-card');
+  const listBtn = document.getElementById('btn-view-list');
+  if (cardBtn && listBtn) {
+    if (isList) {
+      cardBtn.classList.remove('active');
+      cardBtn.setAttribute('aria-pressed', 'false');
+      listBtn.classList.add('active');
+      listBtn.setAttribute('aria-pressed', 'true');
+    } else {
+      cardBtn.classList.add('active');
+      cardBtn.setAttribute('aria-pressed', 'true');
+      listBtn.classList.remove('active');
+      listBtn.setAttribute('aria-pressed', 'false');
+    }
+  }
+  adjustEmbedHeight();
 }
 
 /**
@@ -518,9 +578,15 @@ function filterSongs() {
 
     const idMatch = (song.id || '').toLowerCase().includes(query);
     const titleMatch = (song.title || '').toLowerCase().includes(query);
+    const englishTitleMatch = (song.englishTitle || '').toLowerCase().includes(query);
+    const tamilTitleMatch = (song.tamilTitle || '').toLowerCase().includes(query);
+    const hindiTitleMatch = (song.hindiTitle || song.devanagariTitle || '').toLowerCase().includes(query);
     const tagsMatch = (song.tags || '').toLowerCase().includes(query);
+    const tamilLyricsMatch = (song.tamilLyrics || '').toLowerCase().includes(query);
+    const englishLyricsMatch = (song.englishLyrics || '').toLowerCase().includes(query);
+    const hindiLyricsMatch = (song.devanagariLyrics || '').toLowerCase().includes(query);
 
-    return idMatch || titleMatch || tagsMatch;
+    return idMatch || titleMatch || englishTitleMatch || tamilTitleMatch || hindiTitleMatch || tagsMatch || tamilLyricsMatch || englishLyricsMatch || hindiLyricsMatch;
   });
 
   renderSongs();
@@ -658,8 +724,16 @@ function renderSongs() {
               </span>
             </label>
             <div class="song-info">
-              <h3 class="song-title">${escapeHtml(song.title)}</h3>
+              <h3 class="song-title">${escapeHtml(song.englishTitle || song.title)}</h3>
+              ${song.tamilTitle ? `<div class="song-subtitle-tamil font-tamil">${escapeHtml(song.tamilTitle)}</div>` : ''}
+              ${(song.hindiTitle || song.devanagariTitle) ? `<div class="song-subtitle-hindi font-devanagari">${escapeHtml(song.hindiTitle || song.devanagariTitle)}</div>` : ''}
               <span class="song-id-badge" style="display: none;" aria-hidden="true">${escapeHtml(song.id)}</span>
+              ${song.updatedBy ? `
+                <div class="song-editor-meta" title="Last updated on ${escapeHtml(song.updatedAt || '')}">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                  <span>Edited by ${escapeHtml(song.updatedBy.split('@')[0])}</span>
+                </div>
+              ` : ''}
             </div>
           </div>
 
@@ -690,6 +764,10 @@ function renderSongs() {
             <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
             View Lyrics
           </button>
+          <button class="btn-secondary-action" onclick="openSongEditor('${escapeHtml(song.id)}')" aria-label="Edit lyrics and title for ${escapeHtml(song.title)}">
+            <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            Edit Lyrics
+          </button>
           <button class="btn-secondary-action" onclick="openTagEditor('${escapeHtml(song.id)}')" aria-label="Edit tags for ${escapeHtml(song.title)}">
             <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
             Edit Tags
@@ -700,6 +778,7 @@ function renderSongs() {
   });
 
   elements.songsGrid.innerHTML = html;
+  applySongsViewMode();
   updateSelectionActionBar();
   adjustEmbedHeight();
 }
@@ -812,8 +891,30 @@ function renderLyricsModalBody() {
     fontClass = 'lyrics-english';
   }
 
+  let displayTitle = song.englishTitle || song.title;
+  const subTitles = [];
+  if (song.tamilTitle) subTitles.push(song.tamilTitle);
+  if (song.hindiTitle || song.devanagariTitle) subTitles.push(song.hindiTitle || song.devanagariTitle);
+  if (subTitles.length > 0) {
+    displayTitle += ` (${subTitles.join(' / ')})`;
+  }
+  document.getElementById('modal-lyrics-title').textContent = displayTitle;
+
   contentArea.className = `lyrics-content-area ${fontClass}`;
   contentArea.textContent = lyricsText;
+
+  const attrEl = document.getElementById('modal-lyrics-attribution');
+  if (attrEl) {
+    if (song.updatedBy) {
+      attrEl.style.display = 'flex';
+      attrEl.innerHTML = `
+        <span class="user-pill-dot" style="width:7px;height:7px;"></span>
+        <span>Last edited by <strong>${escapeHtml(song.updatedBy)}</strong>${song.updatedAt ? ' on ' + escapeHtml(song.updatedAt) : ''}</span>
+      `;
+    } else {
+      attrEl.style.display = 'none';
+    }
+  }
 }
 
 window.setLyricsTab = function(lang) {
@@ -1093,8 +1194,11 @@ function renderCollections() {
           <button class="btn-secondary-action" onclick="openCollectionDetails('${escapeHtml(col.collectionId)}')" style="flex:1;">
             Open Collection
           </button>
-          <button class="btn-primary-action" onclick="openExportModal('${escapeHtml(col.collectionId)}')" style="padding:0.5rem 1rem;">
+          <button class="btn-primary-action" onclick="openExportModal('${escapeHtml(col.collectionId)}')" style="padding:0.5rem 0.85rem;">
             Export
+          </button>
+          <button class="btn-danger-action" onclick="confirmDeleteCollection('${escapeHtml(col.collectionId)}', '${escapeHtml(col.name)}')" title="Delete collection" aria-label="Delete collection ${escapeHtml(col.name)}">
+            <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
           </button>
         </div>
       </div>
@@ -1428,6 +1532,186 @@ window.closeModal = function(id) {
     lastFocusedElement.focus();
   }
   setTimeout(adjustEmbedHeight, 80);
+};
+
+/**
+ * Open Song & Lyrics Editor Modal
+ */
+window.openSongEditor = function(songId) {
+  const song = state.songs.find(s => s.id === songId);
+  if (!song) return;
+
+  state.activeEditingSongId = songId;
+
+  document.getElementById('modal-edit-song-id').textContent = `ID: ${song.id}`;
+  document.getElementById('edit-song-english-title').value = song.englishTitle || '';
+  document.getElementById('edit-song-tamil-title').value = song.tamilTitle || '';
+  document.getElementById('edit-song-hindi-title').value = song.hindiTitle || song.devanagariTitle || '';
+  document.getElementById('edit-song-tamil-lyrics').value = song.tamilLyrics || '';
+  document.getElementById('edit-song-english-lyrics').value = song.englishLyrics || '';
+  document.getElementById('edit-song-hindi-lyrics').value = song.devanagariLyrics || '';
+
+  const emailEl = document.getElementById('edit-song-current-user-email');
+  if (emailEl) {
+    emailEl.textContent = (state.currentUser && state.currentUser.email) ? state.currentUser.email : 'active user';
+  }
+
+  // Set initial tab to Tamil or first available
+  switchEditLyricsTab(song.hasTamil ? 'tamil' : (song.hasEnglish ? 'english' : 'hindi'));
+
+  openModal('modal-edit-song');
+};
+
+/**
+ * Switch Edit Lyrics Tab (Tamil, English, Hindi)
+ */
+window.switchEditLyricsTab = function(lang) {
+  state.activeEditLyricsTab = lang;
+  
+  const tabTamil = document.getElementById('tab-edit-tamil');
+  const tabEnglish = document.getElementById('tab-edit-english');
+  const tabHindi = document.getElementById('tab-edit-hindi');
+
+  const paneTamil = document.getElementById('pane-edit-tamil');
+  const paneEnglish = document.getElementById('pane-edit-english');
+  const paneHindi = document.getElementById('pane-edit-hindi');
+
+  if (tabTamil) tabTamil.className = `lyrics-tab-btn ${lang === 'tamil' ? 'active' : ''}`;
+  if (tabEnglish) tabEnglish.className = `lyrics-tab-btn ${lang === 'english' ? 'active' : ''}`;
+  if (tabHindi) tabHindi.className = `lyrics-tab-btn ${lang === 'hindi' ? 'active' : ''}`;
+
+  if (paneTamil) paneTamil.style.display = lang === 'tamil' ? 'block' : 'none';
+  if (paneEnglish) paneEnglish.style.display = lang === 'english' ? 'block' : 'none';
+  if (paneHindi) paneHindi.style.display = lang === 'hindi' ? 'block' : 'none';
+};
+
+/**
+ * Save Song Edits (English Title, Tamil Title, English, Tamil, Hindi Lyrics)
+ * Strictly captures user email in Updated By
+ */
+window.saveSongEdits = async function() {
+  const songId = state.activeEditingSongId;
+  if (!songId) return;
+
+  const englishTitle = document.getElementById('edit-song-english-title').value.trim();
+  const tamilTitle = document.getElementById('edit-song-tamil-title').value.trim();
+  const hindiTitle = document.getElementById('edit-song-hindi-title').value.trim();
+  const tamilLyrics = document.getElementById('edit-song-tamil-lyrics').value.trim();
+  const englishLyrics = document.getElementById('edit-song-english-lyrics').value.trim();
+  const hindiLyrics = document.getElementById('edit-song-hindi-lyrics').value.trim();
+
+  if (!englishTitle && !tamilTitle && !hindiTitle) {
+    showToast('Please provide at least one title (English, Tamil, or Hindi).', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-save-song-edit');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `
+      <span class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:6px;"></span>
+      <span>Saving changes...</span>
+    `;
+  }
+
+  try {
+    const updated = await API.call('apiUpdateSong', songId, {
+      englishTitle: englishTitle,
+      tamilTitle: tamilTitle,
+      hindiTitle: hindiTitle,
+      devanagariTitle: hindiTitle,
+      tamilLyrics: tamilLyrics,
+      englishLyrics: englishLyrics,
+      devanagariLyrics: hindiLyrics,
+      hindiLyrics: hindiLyrics
+    });
+
+    // Update in-memory state
+    const index = state.songs.findIndex(s => s.id === songId);
+    if (index !== -1) {
+      state.songs[index] = Object.assign({}, state.songs[index], updated);
+    }
+
+    if (state.activeLyricsSong && state.activeLyricsSong.id === songId) {
+      state.activeLyricsSong = state.songs[index];
+      renderLyricsModalBody();
+    }
+
+    closeModal('modal-edit-song');
+    filterSongs();
+    showToast(`✓ Song lyrics and titles updated by ${updated.updatedBy || 'you'}.`);
+  } catch (err) {
+    console.error('Failed to update song:', err);
+    showToast('Unable to save changes: ' + (err.message || 'Please try again.'), 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `
+        <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        Save Changes
+      `;
+    }
+  }
+};
+
+/**
+ * Confirm Deletion of a Collection (Collections only, NOT songs)
+ */
+window.confirmDeleteCollection = function(collectionId, collectionName) {
+  if (!collectionId) return;
+  state.pendingDeleteCollectionId = collectionId;
+  const targetEl = document.getElementById('delete-collection-name-target');
+  if (targetEl) targetEl.textContent = `"${collectionName || collectionId}"`;
+  const idLabel = document.getElementById('delete-collection-id-label');
+  if (idLabel) idLabel.textContent = `ID: ${collectionId}`;
+  openModal('modal-delete-collection');
+};
+
+/**
+ * Executes Collection Deletion
+ * Deletes ONLY the collection record, NEVER deletes any songs from library
+ */
+window.executeDeleteCollection = async function() {
+  const collectionId = state.pendingDeleteCollectionId;
+  if (!collectionId) return;
+
+  const btn = document.getElementById('btn-confirm-delete-collection');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `
+      <span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:6px;"></span>
+      <span>Deleting...</span>
+    `;
+  }
+
+  try {
+    await API.call('apiDeleteCollection', collectionId);
+
+    // Update in-memory collections list
+    state.collections = state.collections.filter(c => c.collectionId !== collectionId);
+    
+    // Update indicator if present
+    const countEl = document.getElementById('collections-tab-count');
+    if (countEl) {
+      countEl.textContent = state.collections.length;
+    }
+
+    closeModal('modal-delete-collection');
+    closeModal('modal-open-collection');
+    renderCollections();
+    showToast('✓ Collection deleted successfully. Songs in your library remain untouched.');
+  } catch (err) {
+    console.error('Failed to delete collection:', err);
+    showToast(err.message || 'Unable to delete collection. Please try again.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `
+        <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        Delete Collection
+      `;
+    }
+  }
 };
 
 /**

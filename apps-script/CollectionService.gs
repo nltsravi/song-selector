@@ -355,6 +355,69 @@ var CollectionService = {
   },
 
   /**
+   * Deletes an existing collection belonging to the authenticated user.
+   * STRICT NOTE: Deletes the collection row only from the Collections sheet.
+   * Does NOT delete any songs from the Songs sheet.
+   */
+  deleteCollection: function(collectionId) {
+    var userEmail = AuthService.requireAuthUserEmail();
+
+    if (!collectionId) {
+      throw new Error('Collection ID is required.');
+    }
+    collectionId = collectionId.trim();
+
+    var lock = LockService.getScriptLock();
+    var hasLock = lock.tryLock(CONFIG.LOCK_TIMEOUT_MS);
+    if (!hasLock) throw new Error('System is busy. Please try again.');
+
+    try {
+      var spreadsheet = ConfigService.getSpreadsheet();
+      var sheet = spreadsheet.getSheetByName(CONFIG.COLLECTIONS_SHEET);
+      if (!sheet) {
+        throw new Error('Sheet "' + CONFIG.COLLECTIONS_SHEET + '" was not found.');
+      }
+
+      var headerMap = this.getHeaderMap(sheet);
+      var lastRow = sheet.getLastRow();
+      if (lastRow < 2) {
+        throw new Error('Collection not found.');
+      }
+
+      var data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+      var colId = headerMap['collection id'] - 1;
+      var colEmail = headerMap['user email'] - 1;
+
+      var targetRow = -1;
+      for (var r = 0; r < data.length; r++) {
+        if ((data[r][colId] || '').toString().trim() === collectionId) {
+          var ownerEmail = (data[r][colEmail] || '').toString().trim().toLowerCase();
+          if (ownerEmail !== userEmail) {
+            throw new Error('FORBIDDEN: You do not have permission to delete this collection.');
+          }
+          targetRow = r + 2;
+          break;
+        }
+      }
+
+      if (targetRow === -1) {
+        throw new Error('Collection with ID "' + collectionId + '" was not found.');
+      }
+
+      // Delete ONLY the collection row from the Collections sheet
+      sheet.deleteRow(targetRow);
+
+      return {
+        success: true,
+        collectionId: collectionId,
+        message: 'Collection deleted successfully.'
+      };
+    } finally {
+      lock.releaseLock();
+    }
+  },
+
+  /**
    * Updates last export metadata on the collection
    */
   updateLastExport: function(collectionId, format, language) {

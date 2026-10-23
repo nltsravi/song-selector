@@ -180,17 +180,37 @@
 
   // Storage in localStorage or memory
   function getStoredSongs() {
+    let songs = defaultSongs;
     const raw = localStorage.getItem('SONGS_DATABASE');
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0].imageUrl !== 'undefined') {
-          return parsed;
+          songs = parsed;
         }
       } catch (e) {}
     }
-    localStorage.setItem('SONGS_DATABASE', JSON.stringify(defaultSongs));
-    return defaultSongs;
+    // Ensure every song has englishTitle, tamilTitle, and hindiTitle
+    songs.forEach(s => {
+      if (!s.englishTitle || !s.tamilTitle || !s.hindiTitle) {
+        const match = (s.title || '').match(/^([^(]+)\s*\(([^)]+)\)$/);
+        if (match) {
+          s.englishTitle = s.englishTitle || match[1].trim();
+          s.tamilTitle = s.tamilTitle || match[2].trim();
+        } else if (/[\u0B80-\u0BFF]/.test(s.title || '')) {
+          s.tamilTitle = s.tamilTitle || s.title;
+          s.englishTitle = s.englishTitle || s.title;
+        } else {
+          s.englishTitle = s.englishTitle || s.title;
+          s.tamilTitle = s.tamilTitle || '';
+        }
+        if (!s.hindiTitle) {
+          s.hindiTitle = s.devanagariTitle || '';
+        }
+      }
+    });
+    localStorage.setItem('SONGS_DATABASE', JSON.stringify(songs));
+    return songs;
   }
 
   function saveStoredSongs(songs) {
@@ -420,6 +440,69 @@
       };
     },
 
+    apiUpdateSong: function(songId, songData) {
+      if (!activeSimulatedUser.isAuthenticated) {
+        throw new Error('UNAUTHORIZED: Authentication required.');
+      }
+      const songs = getStoredSongs();
+      const song = songs.find(s => s.id === songId);
+      if (!song) throw new Error('Song with ID "' + songId + '" was not found.');
+
+      const englishTitle = songData.englishTitle !== undefined ? songData.englishTitle.trim() : (song.englishTitle || '');
+      const tamilTitle = songData.tamilTitle !== undefined ? songData.tamilTitle.trim() : (song.tamilTitle || '');
+      const hindiTitle = (songData.hindiTitle !== undefined ? songData.hindiTitle : (songData.devanagariTitle !== undefined ? songData.devanagariTitle : (song.hindiTitle || ''))).trim();
+      let combinedTitle = '';
+      if (englishTitle && tamilTitle) {
+        combinedTitle = `${englishTitle} (${tamilTitle})`;
+      } else {
+        combinedTitle = englishTitle || tamilTitle || hindiTitle || song.title;
+      }
+
+      song.title = combinedTitle;
+      song.englishTitle = englishTitle;
+      song.tamilTitle = tamilTitle;
+      song.hindiTitle = hindiTitle;
+      song.devanagariTitle = hindiTitle;
+
+      if (songData.tamilLyrics !== undefined) {
+        song.tamilLyrics = songData.tamilLyrics.trim();
+        song.hasTamil = song.tamilLyrics.length > 0;
+      }
+      if (songData.englishLyrics !== undefined) {
+        song.englishLyrics = songData.englishLyrics.trim();
+        song.hasEnglish = song.englishLyrics.length > 0;
+      }
+      if (songData.devanagariLyrics !== undefined || songData.hindiLyrics !== undefined) {
+        const hindi = songData.devanagariLyrics !== undefined ? songData.devanagariLyrics : songData.hindiLyrics;
+        song.devanagariLyrics = (hindi || '').trim();
+        song.hasDevanagari = song.devanagariLyrics.length > 0;
+      }
+
+      const timestamp = getKolkataTimestamp();
+      song.updatedAt = timestamp;
+      song.updatedBy = activeSimulatedUser.email || 'user@example.com';
+
+      saveStoredSongs(songs);
+
+      return {
+        songId: songId,
+        id: songId,
+        title: combinedTitle,
+        englishTitle: englishTitle,
+        tamilTitle: tamilTitle,
+        hindiTitle: hindiTitle,
+        devanagariTitle: hindiTitle,
+        tamilLyrics: song.tamilLyrics,
+        englishLyrics: song.englishLyrics,
+        devanagariLyrics: song.devanagariLyrics,
+        hasTamil: song.hasTamil,
+        hasEnglish: song.hasEnglish,
+        hasDevanagari: song.hasDevanagari,
+        updatedAt: timestamp,
+        updatedBy: song.updatedBy
+      };
+    },
+
     apiCreateCollection: function(name, songIds) {
       if (!activeSimulatedUser.isAuthenticated) {
         throw new Error('UNAUTHORIZED: Authentication required.');
@@ -509,6 +592,29 @@
 
       saveStoredCollections(cols);
       return this.apiGetCollection(collectionId);
+    },
+
+    apiDeleteCollection: function(collectionId) {
+      if (!activeSimulatedUser.isAuthenticated) {
+        throw new Error('UNAUTHORIZED: Authentication required.');
+      }
+      const cols = getStoredCollections();
+      const colIndex = cols.findIndex(c => c.collectionId === collectionId);
+      if (colIndex === -1) throw new Error('Collection not found.');
+
+      if (cols[colIndex].userEmail !== activeSimulatedUser.email) {
+        throw new Error('FORBIDDEN: You do not have permission to delete this collection.');
+      }
+
+      // STRICT REQUIREMENT: Delete the collection record only, never delete the songs!
+      cols.splice(colIndex, 1);
+      saveStoredCollections(cols);
+
+      return {
+        success: true,
+        collectionId: collectionId,
+        message: 'Collection deleted successfully.'
+      };
     },
 
     apiValidateExport: function(collectionId, language) {

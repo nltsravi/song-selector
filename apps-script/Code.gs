@@ -106,6 +106,20 @@ function apiUpdateSongTags(songId, tags) {
 }
 
 /**
+ * Updates lyrics, titles, and metadata for a song
+ * Captures the authenticated user's email into the 'Updated By' column
+ */
+function apiUpdateSong(songId, songData) {
+  try {
+    var result = SongService.updateSong(songId, songData);
+    return ResponseHelper.success(result);
+  } catch (err) {
+    Logger.log('apiUpdateSong error: ' + err);
+    return ResponseHelper.error('SONG_UPDATE_ERROR', err.message);
+  }
+}
+
+/**
  * Creates a new named collection (Section 14, 15, 16, 50, 51)
  */
 function apiCreateCollection(name, songIds) {
@@ -158,6 +172,20 @@ function apiUpdateCollection(collectionId, name, songIds) {
 }
 
 /**
+ * Deletes a collection belonging to the authenticated user.
+ * Note: Only deletes the collection row from the Collections sheet, NOT the songs itself.
+ */
+function apiDeleteCollection(collectionId) {
+  try {
+    var result = CollectionService.deleteCollection(collectionId);
+    return ResponseHelper.success(result);
+  } catch (err) {
+    Logger.log('apiDeleteCollection error: ' + err);
+    return ResponseHelper.error('DELETE_COLLECTION_ERROR', err.message);
+  }
+}
+
+/**
  * Pre-export check for missing lyrics (Section 25)
  */
 function apiValidateExport(collectionId, language) {
@@ -200,6 +228,9 @@ function apiSetupSheetStructure() {
       songsSheet.appendRow([
         'Song ID',
         'Song Title',
+        'English Title',
+        'Tamil Title',
+        'Hindi Title',
         'Tamil Lyrics',
         'English Lyrics',
         'Devanagari Lyrics',
@@ -212,7 +243,7 @@ function apiSetupSheetStructure() {
         'Updated At',
         'Updated By'
       ]);
-      var songHeaderRange = songsSheet.getRange(1, 1, 1, 13);
+      var songHeaderRange = songsSheet.getRange(1, 1, 1, 16);
       songHeaderRange.setFontWeight('bold');
       songHeaderRange.setBackground('#1e293b');
       songHeaderRange.setFontColor('#ffffff');

@@ -283,7 +283,173 @@ assert(stylesCss.includes('.btn-request-access'), 'styles.css must style .btn-re
 
 console.log('✓ Request Access sheet structure, backend endpoints, UI components, and styles verified.');
 
+// Test 9: Bilingual Titles, Lyrics Editing & User Email Capture
+console.log('\nTest 9: Bilingual Titles, Lyrics Editing & User Email Capture');
+
+// 1. Verify Bilingual Titles in SetupSheet & SongService
+assert(setupSheetCode.includes("'English Title'"), 'SetupSheet.gs must include English Title column');
+assert(setupSheetCode.includes("'Tamil Title'"), 'SetupSheet.gs must include Tamil Title column');
+assert(songServiceCode.includes("headerMap['english title']"), 'SongService.gs must check english title header');
+assert(songServiceCode.includes("headerMap['tamil title']"), 'SongService.gs must check tamil title header');
+assert(songServiceCode.includes('englishTitle: englishTitle'), 'SongService.gs must return englishTitle');
+assert(songServiceCode.includes('tamilTitle: tamilTitle'), 'SongService.gs must return tamilTitle');
+
+// 2. Verify Legacy Regex Fallback for Bilingual Titles
+const legacyRegex = /^([^(]+)\s*\(([^)]+)\)$/;
+const legacySample = "How Great Thou Art (எத்தனை பெரியவர்)";
+const match = legacySample.match(legacyRegex);
+assert(match, 'Legacy regex must match English (Tamil) format');
+assert.strictEqual(match[1].trim(), 'How Great Thou Art');
+assert.strictEqual(match[2].trim(), 'எத்தனை பெரியவர்');
+
+// 3. Verify Code.gs exposes apiUpdateSong
+assert(codeGs.includes('apiUpdateSong'), 'Code.gs must expose apiUpdateSong endpoint');
+
+// 4. Verify SongService updateSong captures editor email and updates sheet
+assert(songServiceCode.includes('updateSong: function(songId, songData)'), 'SongService must implement updateSong');
+assert(songServiceCode.includes('AuthService.requireAuthUserEmail()'), 'SongService must require authenticated user email for updating songs');
+assert(songServiceCode.includes("headerMap['updated by']"), 'SongService must update Updated By column');
+assert(songServiceCode.includes("headerMap['updated at']"), 'SongService must update Updated At column');
+assert(songServiceCode.includes('englishLyrics'), 'SongService must update English lyrics');
+assert(songServiceCode.includes('tamilLyrics'), 'SongService must update Tamil lyrics');
+assert(songServiceCode.includes('devanagariLyrics'), 'SongService must update Devanagari lyrics');
+
+// 5. Verify ExportService uses bilingual titles appropriately
+assert(exportServiceCode.includes("validLang === 'Tamil' && s.tamilTitle"), 'ExportService must prioritize Tamil title for Tamil exports');
+assert(exportServiceCode.includes("validLang === 'English' && s.englishTitle"), 'ExportService must prioritize English title for English exports');
+
+// 6. Verify Edit Lyrics & Title Modal in HTML
+assert(appsScriptIndex.includes('id="modal-edit-song"'), 'apps-script/index.html must include modal-edit-song');
+assert(appsScriptIndex.includes('id="edit-song-english-title"'), 'apps-script/index.html must have edit-song-english-title');
+assert(appsScriptIndex.includes('id="edit-song-tamil-title"'), 'apps-script/index.html must have edit-song-tamil-title');
+assert(appsScriptIndex.includes('id="edit-song-tamil-lyrics"'), 'apps-script/index.html must have edit-song-tamil-lyrics');
+assert(appsScriptIndex.includes('id="edit-song-english-lyrics"'), 'apps-script/index.html must have edit-song-english-lyrics');
+assert(appsScriptIndex.includes('id="edit-song-hindi-lyrics"'), 'apps-script/index.html must have edit-song-hindi-lyrics');
+assert(appsScriptIndex.includes('id="edit-song-current-user-email"'), 'apps-script/index.html must show active editor email');
+
+assert(publicIndex.includes('id="modal-edit-song"'), 'public/index.html must include modal-edit-song');
+
+// 7. Verify Client-side functions in public/app.js & apps-script/javascript.html
+assert(appJs.includes('openSongEditor'), 'public/app.js must implement openSongEditor');
+assert(appJs.includes('switchEditLyricsTab'), 'public/app.js must implement switchEditLyricsTab');
+assert(appJs.includes('saveSongEdits'), 'public/app.js must implement saveSongEdits');
+assert(appJs.includes('apiUpdateSong'), 'public/app.js must call apiUpdateSong');
+
+assert(jsHtmlCode.includes('openSongEditor'), 'apps-script/javascript.html must implement openSongEditor');
+assert(jsHtmlCode.includes('switchEditLyricsTab'), 'apps-script/javascript.html must implement switchEditLyricsTab');
+assert(jsHtmlCode.includes('saveSongEdits'), 'apps-script/javascript.html must implement saveSongEdits');
+assert(jsHtmlCode.includes('apiUpdateSong'), 'apps-script/javascript.html must call apiUpdateSong');
+
+// 8. Verify Styles for Bilingual UI & Attribution
+assert(stylesCss.includes('.song-subtitle-tamil'), 'styles.css must style .song-subtitle-tamil');
+assert(stylesCss.includes('.song-editor-meta'), 'styles.css must style .song-editor-meta');
+assert(stylesCss.includes('.lyrics-attribution-footer'), 'styles.css must style .lyrics-attribution-footer');
+assert(stylesCss.includes('.editor-attribution-notice'), 'styles.css must style .editor-attribution-notice');
+
+console.log('✓ Bilingual titles, multi-lingual lyrics editing, and editor email attribution verified.');
+
+// Test 10: Hindi Title in All Song Services & Collection Deletion (Collections Only, Never Songs)
+console.log('\nTest 10: Hindi Title in All Song Services & Collection Deletion (Collections Only, Never Songs)');
+
+// 1. Re-read files to capture latest modifications
+const updatedSetupSheet = fs.readFileSync('apps-script/SetupSheet.gs', 'utf8');
+const updatedSongService = fs.readFileSync('apps-script/SongService.gs', 'utf8');
+const updatedExportService = fs.readFileSync('apps-script/ExportService.gs', 'utf8');
+const updatedCodeGs = fs.readFileSync('apps-script/Code.gs', 'utf8');
+const updatedCollectionService = fs.readFileSync('apps-script/CollectionService.gs', 'utf8');
+const updatedPublicIndex = fs.readFileSync('public/index.html', 'utf8');
+const updatedAppsScriptIndex = fs.readFileSync('apps-script/index.html', 'utf8');
+const updatedAppJs = fs.readFileSync('public/app.js', 'utf8');
+const updatedJsHtml = fs.readFileSync('apps-script/javascript.html', 'utf8');
+const updatedStylesCss = fs.readFileSync('public/styles.css', 'utf8');
+
+// 2. Verify Hindi Title in SetupSheet & SongService
+assert(updatedSetupSheet.includes("'Hindi Title'"), 'SetupSheet.gs must include Hindi Title column');
+assert(updatedSongService.includes("headerMap['hindi title']"), 'SongService.gs must check hindi title header');
+assert(updatedSongService.includes('hindiTitle: hindiTitle'), 'SongService.gs must return hindiTitle');
+assert(updatedExportService.includes("validLang === 'Devanagari' && (s.hindiTitle || s.devanagariTitle)"), 'ExportService must prioritize Hindi/Devanagari title for Devanagari exports');
+
+// 3. Verify Hindi Title editing in Modal
+assert(updatedPublicIndex.includes('id="edit-song-hindi-title"'), 'public/index.html must include edit-song-hindi-title');
+assert(updatedAppsScriptIndex.includes('id="edit-song-hindi-title"'), 'apps-script/index.html must include edit-song-hindi-title');
+assert(updatedAppJs.includes('edit-song-hindi-title'), 'public/app.js must handle edit-song-hindi-title');
+assert(updatedJsHtml.includes('edit-song-hindi-title'), 'apps-script/javascript.html must handle edit-song-hindi-title');
+
+// 4. Verify Collection Deletion API and Service
+assert(updatedCodeGs.includes('apiDeleteCollection'), 'Code.gs must expose apiDeleteCollection');
+assert(updatedCollectionService.includes('deleteCollection: function(collectionId)'), 'CollectionService must implement deleteCollection');
+assert(updatedCollectionService.includes('sheet.deleteRow(targetRow)'), 'CollectionService must delete collection row');
+assert(updatedCollectionService.includes('CONFIG.COLLECTIONS_SHEET'), 'CollectionService must target Collections sheet');
+assert(!updatedCollectionService.includes('CONFIG.SONGS_SHEET'), 'CollectionService must NEVER touch Songs sheet during collection deletion');
+
+// 5. Verify Collection Deletion UI & Confirmation Modal
+assert(updatedPublicIndex.includes('id="modal-delete-collection"'), 'public/index.html must include modal-delete-collection');
+assert(updatedAppsScriptIndex.includes('id="modal-delete-collection"'), 'apps-script/index.html must include modal-delete-collection');
+assert(updatedPublicIndex.includes('The songs inside this collection will <strong>NOT</strong> be deleted'), 'public/index.html must emphasize songs will not be deleted');
+assert(updatedAppsScriptIndex.includes('The songs inside this collection will <strong>NOT</strong> be deleted'), 'apps-script/index.html must emphasize songs will not be deleted');
+
+assert(updatedAppJs.includes('confirmDeleteCollection'), 'public/app.js must implement confirmDeleteCollection');
+assert(updatedAppJs.includes('executeDeleteCollection'), 'public/app.js must implement executeDeleteCollection');
+assert(updatedAppJs.includes('apiDeleteCollection'), 'public/app.js must call apiDeleteCollection');
+
+assert(updatedJsHtml.includes('confirmDeleteCollection'), 'apps-script/javascript.html must implement confirmDeleteCollection');
+assert(updatedJsHtml.includes('executeDeleteCollection'), 'apps-script/javascript.html must implement executeDeleteCollection');
+assert(updatedJsHtml.includes('apiDeleteCollection'), 'apps-script/javascript.html must call apiDeleteCollection');
+
+assert(updatedStylesCss.includes('.btn-danger-action'), 'styles.css must style .btn-danger-action');
+assert(updatedStylesCss.includes('.song-subtitle-hindi'), 'styles.css must style .song-subtitle-hindi');
+
+console.log('✓ Hindi titles for songs, multi-title editing, and safe collection-only deletion verified.');
+
+// Test 11: List View Switcher, 2-Column List Layout & Card View Default
+console.log('\nTest 11: List View Switcher, 2-Column List Layout & Card View Default');
+
+// 1. Re-read files to capture latest modifications
+const test11PublicIndex = fs.readFileSync('public/index.html', 'utf8');
+const test11AppsScriptIndex = fs.readFileSync('apps-script/index.html', 'utf8');
+const test11AppJs = fs.readFileSync('public/app.js', 'utf8');
+const test11JsHtml = fs.readFileSync('apps-script/javascript.html', 'utf8');
+const test11StylesCss = fs.readFileSync('public/styles.css', 'utf8');
+const test11StylesHtml = fs.readFileSync('apps-script/styles.html', 'utf8');
+
+// 2. Verify View Toggle Buttons in UI Markup
+assert(test11PublicIndex.includes('id="btn-view-card"'), 'public/index.html must include btn-view-card');
+assert(test11PublicIndex.includes('id="btn-view-list"'), 'public/index.html must include btn-view-list');
+assert(test11PublicIndex.includes('switchSongsView(\'card\')'), 'public/index.html must bind switchSongsView(card)');
+assert(test11PublicIndex.includes('switchSongsView(\'list\')'), 'public/index.html must bind switchSongsView(list)');
+
+assert(test11AppsScriptIndex.includes('id="btn-view-card"'), 'apps-script/index.html must include btn-view-card');
+assert(test11AppsScriptIndex.includes('id="btn-view-list"'), 'apps-script/index.html must include btn-view-list');
+assert(test11AppsScriptIndex.includes('switchSongsView(\'card\')'), 'apps-script/index.html must bind switchSongsView(card)');
+assert(test11AppsScriptIndex.includes('switchSongsView(\'list\')'), 'apps-script/index.html must bind switchSongsView(list)');
+
+// 3. Verify Default to Card View & Switching Functions in App Controller
+assert(test11AppJs.includes("songsViewMode: 'card'"), 'public/app.js state must default songsViewMode to card');
+assert(test11AppJs.includes('initSongsViewMode'), 'public/app.js must implement initSongsViewMode');
+assert(test11AppJs.includes('switchSongsView'), 'public/app.js must implement switchSongsView');
+assert(test11AppJs.includes('applySongsViewMode'), 'public/app.js must implement applySongsViewMode');
+
+assert(test11JsHtml.includes("songsViewMode: 'card'"), 'apps-script/javascript.html state must default songsViewMode to card');
+assert(test11JsHtml.includes('initSongsViewMode'), 'apps-script/javascript.html must implement initSongsViewMode');
+assert(test11JsHtml.includes('switchSongsView'), 'apps-script/javascript.html must implement switchSongsView');
+assert(test11JsHtml.includes('applySongsViewMode'), 'apps-script/javascript.html must implement applySongsViewMode');
+
+// 4. Verify Two-Column List View Styling & Responsive Breakdown
+assert(test11StylesCss.includes('.songs-grid.view-list'), 'public/styles.css must style .songs-grid.view-list');
+assert(test11StylesCss.includes('repeat(2, minmax(0, 1fr))'), 'public/styles.css must specify 2-column layout in list view');
+assert(test11StylesCss.includes('.view-mode-selector'), 'public/styles.css must style .view-mode-selector');
+assert(test11StylesCss.includes('.btn-view-toggle'), 'public/styles.css must style .btn-view-toggle');
+
+assert(test11StylesHtml.includes('.songs-grid.view-list'), 'apps-script/styles.html must style .songs-grid.view-list');
+assert(test11StylesHtml.includes('repeat(2, minmax(0, 1fr))'), 'apps-script/styles.html must specify 2-column layout in list view');
+assert(test11StylesHtml.includes('.view-mode-selector'), 'apps-script/styles.html must style .view-mode-selector');
+assert(test11StylesHtml.includes('.btn-view-toggle'), 'apps-script/styles.html must style .btn-view-toggle');
+
+console.log('✓ List view switcher, card view default, and 2-column list layout verified.');
+
 console.log('\n========================================');
-console.log('ALL TESTS PASSED SUCCESSFULLY! (8/8)');
+console.log('ALL TESTS PASSED SUCCESSFULLY! (11/11)');
 console.log('========================================\n');
+
+
 

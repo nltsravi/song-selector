@@ -141,9 +141,18 @@ var ExportService = {
       else lyrics = s.englishLyrics;
 
       if (lyrics && lyrics.trim() !== '') {
+        var exportTitle = s.title;
+        if (validLang === 'Tamil' && s.tamilTitle) {
+          exportTitle = s.tamilTitle + (s.englishTitle ? ' (' + s.englishTitle + ')' : '');
+        } else if (validLang === 'English' && s.englishTitle) {
+          exportTitle = s.englishTitle + (s.tamilTitle ? ' (' + s.tamilTitle + ')' : '');
+        } else if (validLang === 'Devanagari' && (s.hindiTitle || s.devanagariTitle)) {
+          var hTitle = s.hindiTitle || s.devanagariTitle;
+          exportTitle = hTitle + (s.englishTitle ? ' (' + s.englishTitle + ')' : '');
+        }
         songsToExport.push({
           id: s.id,
-          title: s.title,
+          title: exportTitle,
           lyrics: lyrics.trim()
         });
       }

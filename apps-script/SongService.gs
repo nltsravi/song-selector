@@ -78,6 +78,9 @@ var SongService = {
 
     var colId = headerMap['song id'] - 1;
     var colTitle = headerMap['song title'] - 1;
+    var colEnglishTitle = headerMap['english title'] ? headerMap['english title'] - 1 : -1;
+    var colTamilTitle = headerMap['tamil title'] ? headerMap['tamil title'] - 1 : -1;
+    var colHindiTitle = headerMap['hindi title'] ? headerMap['hindi title'] - 1 : (headerMap['devanagari title'] ? headerMap['devanagari title'] - 1 : -1);
     var colTamil = headerMap['tamil lyrics'] - 1;
     var colEnglish = headerMap['english lyrics'] - 1;
     var colDevanagari = headerMap['devanagari lyrics'] - 1;
@@ -95,8 +98,34 @@ var SongService = {
     for (var r = 0; r < data.length; r++) {
       var row = data[r];
       var id = (row[colId] || '').toString().trim();
-      var title = (row[colTitle] || '').toString().trim();
-      if (!id && !title) continue;
+      var rawTitle = (row[colTitle] || '').toString().trim();
+      if (!id && !rawTitle) continue;
+
+      var englishTitle = colEnglishTitle >= 0 ? (row[colEnglishTitle] || '').toString().trim() : '';
+      var tamilTitle = colTamilTitle >= 0 ? (row[colTamilTitle] || '').toString().trim() : '';
+      var hindiTitle = colHindiTitle >= 0 ? (row[colHindiTitle] || '').toString().trim() : '';
+
+      // Graceful extraction from "English Title (Tamil Title)" if columns are blank
+      if (!englishTitle && !tamilTitle && rawTitle) {
+        var match = rawTitle.match(/^([^(]+)\s*\(([^)]+)\)$/);
+        if (match) {
+          englishTitle = match[1].trim();
+          tamilTitle = match[2].trim();
+        } else if (/[\u0B80-\u0BFF]/.test(rawTitle)) {
+          tamilTitle = rawTitle;
+        } else {
+          englishTitle = rawTitle;
+        }
+      }
+
+      var displayTitle = rawTitle;
+      if (!displayTitle) {
+        if (englishTitle && tamilTitle) {
+          displayTitle = englishTitle + ' (' + tamilTitle + ')';
+        } else {
+          displayTitle = englishTitle || tamilTitle || id;
+        }
+      }
 
       var activeVal = row[colActive];
       var isActive = (activeVal === true || activeVal === 'TRUE' || activeVal === 'true' || activeVal === 'Yes' || activeVal === 1 || activeVal === '' || activeVal === undefined);
@@ -120,7 +149,11 @@ var SongService = {
 
       songs.push({
         id: id,
-        title: title,
+        title: displayTitle,
+        englishTitle: englishTitle,
+        tamilTitle: tamilTitle,
+        hindiTitle: hindiTitle,
+        devanagariTitle: hindiTitle,
         tamilLyrics: tamilLyrics,
         englishLyrics: englishLyrics,
         devanagariLyrics: devanagariLyrics,
@@ -232,6 +265,182 @@ var SongService = {
         songId: songId,
         tags: normalizedTags,
         tagList: TagHelper.parseTagsToArray(normalizedTags),
+        updatedAt: timestamp,
+        updatedBy: userEmail
+      };
+    } finally {
+      lock.releaseLock();
+    }
+  },
+
+  /**
+   * Updates lyrics, titles, and metadata for a song
+   * Strictly records the authenticated user's email into 'Updated By'
+   */
+  updateSong: function(songId, songData) {
+    var userEmail = AuthService.requireAuthUserEmail();
+
+    if (!songId || songId.trim() === '') {
+      throw new Error('Song ID is required.');
+    }
+    songId = songId.trim();
+
+    if (!songData || typeof songData !== 'object') {
+      throw new Error('Song data is required.');
+    }
+
+    var timestamp = DateHelper.getFormattedTimestamp();
+
+    var lock = LockService.getScriptLock();
+    var hasLock = lock.tryLock(CONFIG.LOCK_TIMEOUT_MS);
+    if (!hasLock) {
+      throw new Error('System is currently busy updating another record. Please try again.');
+    }
+
+    try {
+      var spreadsheet = ConfigService.getSpreadsheet();
+      var sheet = spreadsheet.getSheetByName(CONFIG.SONGS_SHEET);
+      if (!sheet) {
+        throw new Error('Sheet "' + CONFIG.SONGS_SHEET + '" was not found.');
+      }
+
+      // Check if English Title or Tamil Title columns need to be added to existing sheet
+      var headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      var colMap = {};
+      for (var c = 0; c < headerRow.length; c++) {
+        var hName = (headerRow[c] || '').toString().trim().toLowerCase();
+        if (hName) colMap[hName] = c + 1;
+      }
+
+      if (!colMap['english title'] && colMap['song title']) {
+        sheet.insertColumnAfter(colMap['song title']);
+        var newColIdx = colMap['song title'] + 1;
+        sheet.getRange(1, newColIdx).setValue('English Title');
+        sheet.getRange(1, newColIdx).setFontWeight('bold').setBackground('#0f172a').setFontColor('#ffffff');
+      }
+
+      headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      colMap = {};
+      for (var c2 = 0; c2 < headerRow.length; c2++) {
+        var hName2 = (headerRow[c2] || '').toString().trim().toLowerCase();
+        if (hName2) colMap[hName2] = c2 + 1;
+      }
+
+      if (!colMap['tamil title'] && colMap['english title']) {
+        sheet.insertColumnAfter(colMap['english title']);
+        var newColIdx2 = colMap['english title'] + 1;
+        sheet.getRange(1, newColIdx2).setValue('Tamil Title');
+        sheet.getRange(1, newColIdx2).setFontWeight('bold').setBackground('#0f172a').setFontColor('#ffffff');
+      }
+
+      headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      colMap = {};
+      for (var c3 = 0; c3 < headerRow.length; c3++) {
+        var hName3 = (headerRow[c3] || '').toString().trim().toLowerCase();
+        if (hName3) colMap[hName3] = c3 + 1;
+      }
+
+      if (!colMap['hindi title'] && colMap['tamil title']) {
+        sheet.insertColumnAfter(colMap['tamil title']);
+        var newColIdx3 = colMap['tamil title'] + 1;
+        sheet.getRange(1, newColIdx3).setValue('Hindi Title');
+        sheet.getRange(1, newColIdx3).setFontWeight('bold').setBackground('#0f172a').setFontColor('#ffffff');
+      }
+
+      var headerMap = this.getHeaderMap(sheet);
+      var idColIdx = headerMap['song id'];
+      var titleColIdx = headerMap['song title'];
+      var englishTitleColIdx = headerMap['english title'];
+      var tamilTitleColIdx = headerMap['tamil title'];
+      var hindiTitleColIdx = headerMap['hindi title'] || headerMap['devanagari title'];
+      var tamilColIdx = headerMap['tamil lyrics'];
+      var englishColIdx = headerMap['english lyrics'];
+      var devanagariColIdx = headerMap['devanagari lyrics'];
+      var updatedAtColIdx = headerMap['updated at'];
+      var updatedByColIdx = headerMap['updated by'];
+
+      var lastRow = sheet.getLastRow();
+      if (lastRow < 2) {
+        throw new Error('No songs found in the database.');
+      }
+
+      var idsRange = sheet.getRange(2, idColIdx, lastRow - 1, 1).getValues();
+      var targetRow = -1;
+
+      for (var r = 0; r < idsRange.length; r++) {
+        if ((idsRange[r][0] || '').toString().trim() === songId) {
+          targetRow = r + 2;
+          break;
+        }
+      }
+
+      if (targetRow === -1) {
+        throw new Error('Song with ID "' + songId + '" was not found.');
+      }
+
+      var englishTitle = songData.englishTitle !== undefined ? songData.englishTitle.toString().trim() : '';
+      var tamilTitle = songData.tamilTitle !== undefined ? songData.tamilTitle.toString().trim() : '';
+      var hindiTitle = (songData.hindiTitle !== undefined ? songData.hindiTitle : (songData.devanagariTitle !== undefined ? songData.devanagariTitle : '')).toString().trim();
+      var tamilLyrics = songData.tamilLyrics !== undefined ? songData.tamilLyrics.toString().trim() : '';
+      var englishLyrics = songData.englishLyrics !== undefined ? songData.englishLyrics.toString().trim() : '';
+      var devanagariLyrics = (songData.devanagariLyrics !== undefined ? songData.devanagariLyrics : (songData.hindiLyrics !== undefined ? songData.hindiLyrics : '')).toString().trim();
+
+      var combinedTitle = '';
+      if (englishTitle && tamilTitle) {
+        combinedTitle = englishTitle + ' (' + tamilTitle + ')';
+      } else {
+        combinedTitle = englishTitle || tamilTitle || hindiTitle || (songData.title || '').toString().trim();
+      }
+
+      if (titleColIdx && combinedTitle) {
+        sheet.getRange(targetRow, titleColIdx).setValue(combinedTitle);
+      }
+      if (englishTitleColIdx && songData.englishTitle !== undefined) {
+        sheet.getRange(targetRow, englishTitleColIdx).setValue(englishTitle);
+      }
+      if (tamilTitleColIdx && songData.tamilTitle !== undefined) {
+        sheet.getRange(targetRow, tamilTitleColIdx).setValue(tamilTitle);
+      }
+      if (hindiTitleColIdx && (songData.hindiTitle !== undefined || songData.devanagariTitle !== undefined)) {
+        sheet.getRange(targetRow, hindiTitleColIdx).setValue(hindiTitle);
+      }
+      if (tamilColIdx && songData.tamilLyrics !== undefined) {
+        sheet.getRange(targetRow, tamilColIdx).setValue(tamilLyrics);
+      }
+      if (englishColIdx && songData.englishLyrics !== undefined) {
+        sheet.getRange(targetRow, englishColIdx).setValue(englishLyrics);
+      }
+      if (devanagariColIdx && (songData.devanagariLyrics !== undefined || songData.hindiLyrics !== undefined)) {
+        sheet.getRange(targetRow, devanagariColIdx).setValue(devanagariLyrics);
+      }
+
+      // Record Updated At and Updated By
+      if (updatedAtColIdx) {
+        sheet.getRange(targetRow, updatedAtColIdx).setValue(timestamp);
+      }
+      if (updatedByColIdx) {
+        sheet.getRange(targetRow, updatedByColIdx).setValue(userEmail);
+      }
+
+      // Invalidate cache
+      try {
+        CacheService.getScriptCache().remove('SONGS_CACHE_LIST');
+      } catch (e) {}
+
+      return {
+        songId: songId,
+        id: songId,
+        title: combinedTitle,
+        englishTitle: englishTitle,
+        tamilTitle: tamilTitle,
+        hindiTitle: hindiTitle,
+        devanagariTitle: hindiTitle,
+        tamilLyrics: tamilLyrics,
+        englishLyrics: englishLyrics,
+        devanagariLyrics: devanagariLyrics,
+        hasTamil: tamilLyrics.length > 0,
+        hasEnglish: englishLyrics.length > 0,
+        hasDevanagari: devanagariLyrics.length > 0,
         updatedAt: timestamp,
         updatedBy: userEmail
       };
