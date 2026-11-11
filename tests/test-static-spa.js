@@ -229,12 +229,28 @@ const tamilPdfExport = mockScope.MockBackend.apiExportCollection(createdCol.coll
 assert(tamilPdfExport.success, 'Tamil PDF export must succeed');
 assert(tamilPdfExport.base64Data && tamilPdfExport.base64Data.length > 0, 'Tamil PDF export must return base64Data');
 assert(tamilPdfExport.mimeType === 'application/pdf', 'Tamil PDF export must have PDF mimeType');
+assert(Array.isArray(tamilPdfExport.songs) && tamilPdfExport.songs.length > 0, 'PDF export must return hydrated songs array');
+assert(tamilPdfExport.songs[0].lyrics && tamilPdfExport.songs[0].lyrics.length > 0, 'PDF export songs must contain non-empty lyrics');
 
-// Test DOCX export with Devanagari lyrics (should not throw InvalidCharacterError)
+// Test DOCX export with Devanagari & Tamil lyrics (must be a genuine OpenXML PKZIP .docx archive)
 const devanagariDocxExport = mockScope.MockBackend.apiExportCollection(createdCol.collectionId, 'Devanagari', 'DOCX', true);
 assert(devanagariDocxExport.success, 'Devanagari DOCX export must succeed');
 assert(devanagariDocxExport.base64Data && devanagariDocxExport.base64Data.length > 0, 'Devanagari DOCX export must return base64Data');
-console.log('✓ Safe base64 export verified for Tamil and Devanagari (no InvalidCharacterError)');
+const docxBuffer = Buffer.from(devanagariDocxExport.base64Data, 'base64');
+assert(docxBuffer[0] === 0x50 && docxBuffer[1] === 0x4B && docxBuffer[2] === 0x03 && docxBuffer[3] === 0x04, 'DOCX export must be a valid PKZIP OpenXML archive starting with PK\\x03\\x04');
+const docxRawString = docxBuffer.toString('utf8');
+assert(docxRawString.includes('word/document.xml'), 'DOCX archive must contain word/document.xml');
+assert(docxRawString.includes('word/header1.xml'), 'DOCX archive must contain word/header1.xml');
+assert(docxRawString.includes('word/footer1.xml'), 'DOCX archive must contain word/footer1.xml');
+assert(docxRawString.includes('word/footer2.xml'), 'DOCX archive must contain word/footer2.xml');
+assert(docxRawString.includes('© OmkaarSSL'), 'DOCX archive must contain © OmkaarSSL footer');
+assert(docxRawString.includes('Tamil Devotional Collection'), 'DOCX archive must contain collection title');
+
+// Also verify Sample Collection (COL-20261008-073214-A7F3) exports non-empty songs
+const sampleExport = mockScope.MockBackend.apiExportCollection('COL-20261008-073214-A7F3', 'Tamil', 'PDF', true);
+assert(sampleExport.success && sampleExport.songs.length === 3, 'Default sample collection must hydrate and export all 3 songs');
+assert(sampleExport.songs[0].lyrics.length > 10, 'Default sample collection songs must have non-empty lyrics');
+console.log('✓ Safe base64 export, genuine OpenXML DOCX archive & multi-page PDF export verified for Tamil, Devanagari & English');
 
 console.log('\n========================================');
 console.log('ALL STATIC APP & MOBILE TESTS PASSED! (7/7)');

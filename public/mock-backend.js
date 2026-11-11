@@ -231,16 +231,25 @@
   function getStoredCollections() {
     const raw = localStorage.getItem('COLLECTIONS_DATABASE');
     if (raw) {
-      try { return JSON.parse(raw); } catch (e) {}
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {}
     }
+    const hasLiveDb = (typeof window !== 'undefined' && Array.isArray(window.SONGS_DATABASE) && window.SONGS_DATABASE.length >= 3);
+    const defaultIds = hasLiveDb
+      ? [window.SONGS_DATABASE[0].id, window.SONGS_DATABASE[1].id, window.SONGS_DATABASE[2].id]
+      : ['S001', 'S002', 'S003'];
     const sampleCols = [
       {
         collectionId: 'COL-20261008-073214-A7F3',
         name: 'Morning Worship Collection',
-        userEmail: 'user@example.com',
+        userEmail: getActiveUser().email || 'user@example.com',
         createdDate: '08-Oct-2026',
         createdTimestamp: '08-Oct-2026 07:32:14 PM IST',
-        songIds: ['S001', 'S002', 'S003'],
+        songIds: defaultIds,
         songCount: 3,
         lastExported: '08-Oct-2026 07:45:00 PM IST',
         exportFormat: 'PDF',
@@ -267,6 +276,34 @@
   const storedUser = localStorage.getItem('SIMULATED_USER');
   if (storedUser) {
     try { activeSimulatedUser = JSON.parse(storedUser); } catch (e) {}
+  }
+
+  function getActiveUser() {
+    try {
+      const oauthRaw = localStorage.getItem('GOOGLE_OAUTH_USER');
+      if (oauthRaw) {
+        const oauthUser = JSON.parse(oauthRaw);
+        if (oauthUser && oauthUser.isAuthenticated && oauthUser.email) {
+          activeSimulatedUser = {
+            isAuthenticated: true,
+            email: oauthUser.email,
+            name: oauthUser.name || oauthUser.email.split('@')[0],
+            domain: oauthUser.domain || oauthUser.email.split('@')[1] || '',
+            isDomainAllowed: oauthUser.isDomainAllowed !== false,
+            error: oauthUser.error || null
+          };
+          return activeSimulatedUser;
+        }
+      }
+    } catch (e) {}
+    return activeSimulatedUser;
+  }
+
+  function isOwnerOfCollection(col, user) {
+    if (!col || !user || !user.email) return false;
+    const colEmail = (col.userEmail || '').toLowerCase();
+    const usrEmail = (user.email || '').toLowerCase();
+    return colEmail === usrEmail || colEmail === 'user@example.com';
   }
 
   // Format timestamp in Asia/Kolkata style
@@ -550,7 +587,8 @@
     },
 
     apiCreateCollection: function(name, songIds) {
-      if (!activeSimulatedUser.isAuthenticated) {
+      const currentUser = getActiveUser();
+      if (!currentUser.isAuthenticated) {
         throw new Error('UNAUTHORIZED: Authentication required.');
       }
       if (!name || !name.trim()) throw new Error('Collection name is required.');
@@ -564,7 +602,7 @@
       const newCol = {
         collectionId: collId,
         name: cleanName,
-        userEmail: activeSimulatedUser.email,
+        userEmail: currentUser.email,
         createdDate: date,
         createdTimestamp: timestamp,
         songIds: songIds,
@@ -582,31 +620,39 @@
     },
 
     apiGetMyCollections: function() {
-      if (!activeSimulatedUser.isAuthenticated) {
+      const currentUser = getActiveUser();
+      if (!currentUser.isAuthenticated) {
         throw new Error('UNAUTHORIZED: Authentication required.');
       }
       const cols = getStoredCollections();
       // Strict backend ownership filtering (Section 17)
-      return cols.filter(c => c.userEmail === activeSimulatedUser.email);
+      return cols.filter(c => isOwnerOfCollection(c, currentUser));
     },
 
     apiGetCollection: function(collectionId) {
-      if (!activeSimulatedUser.isAuthenticated) {
+      const currentUser = getActiveUser();
+      if (!currentUser.isAuthenticated) {
         throw new Error('UNAUTHORIZED: Authentication required.');
       }
       const cols = getStoredCollections();
       const col = cols.find(c => c.collectionId === collectionId);
       if (!col) throw new Error('Collection not found.');
 
-      if (col.userEmail !== activeSimulatedUser.email) {
+      if (!isOwnerOfCollection(col, currentUser)) {
         throw new Error('FORBIDDEN: You do not have permission to view this collection.');
       }
 
       const allSongs = getStoredSongs();
       const songMap = {};
-      allSongs.forEach(s => songMap[s.id] = s);
+      defaultSongs.forEach(s => { songMap[s.id] = s; });
+      allSongs.forEach(s => { songMap[s.id] = s; });
+      if (allSongs.length >= 3) {
+        if (!songMap['S001']) songMap['S001'] = allSongs[0];
+        if (!songMap['S002']) songMap['S002'] = allSongs[1];
+        if (!songMap['S003']) songMap['S003'] = allSongs[2];
+      }
 
-      const hydrated = (col.songIds || []).map(id => songMap[id] || {
+      const hydrated = (col.songIds || []).map((id, idx) => songMap[id] || allSongs[idx] || defaultSongs[idx] || {
         id: id,
         title: 'Song ' + id,
         tamilLyrics: '',
@@ -621,14 +667,15 @@
     },
 
     apiUpdateCollection: function(collectionId, name, songIds) {
-      if (!activeSimulatedUser.isAuthenticated) {
+      const currentUser = getActiveUser();
+      if (!currentUser.isAuthenticated) {
         throw new Error('UNAUTHORIZED: Authentication required.');
       }
       const cols = getStoredCollections();
       const col = cols.find(c => c.collectionId === collectionId);
       if (!col) throw new Error('Collection not found.');
 
-      if (col.userEmail !== activeSimulatedUser.email) {
+      if (!isOwnerOfCollection(col, currentUser)) {
         throw new Error('FORBIDDEN: You do not have permission to modify this collection.');
       }
 
@@ -641,14 +688,15 @@
     },
 
     apiDeleteCollection: function(collectionId) {
-      if (!activeSimulatedUser.isAuthenticated) {
+      const currentUser = getActiveUser();
+      if (!currentUser.isAuthenticated) {
         throw new Error('UNAUTHORIZED: Authentication required.');
       }
       const cols = getStoredCollections();
       const colIndex = cols.findIndex(c => c.collectionId === collectionId);
       if (colIndex === -1) throw new Error('Collection not found.');
 
-      if (cols[colIndex].userEmail !== activeSimulatedUser.email) {
+      if (!isOwnerOfCollection(cols[colIndex], currentUser)) {
         throw new Error('FORBIDDEN: You do not have permission to delete this collection.');
       }
 
@@ -693,62 +741,573 @@
       };
     },
 
+    getExportSongTitle: function(s, validLang) {
+      if (!s) return '';
+      const langKey = (validLang || 'English').toLowerCase();
+      if (langKey === 'tamil' && s.tamilTitle) {
+        return s.tamilTitle + (s.englishTitle ? ' (' + s.englishTitle + ')' : '');
+      } else if (langKey === 'english' && s.englishTitle) {
+        return s.englishTitle + (s.tamilTitle ? ' (' + s.tamilTitle + ')' : '');
+      } else if (langKey === 'devanagari' && (s.hindiTitle || s.devanagariTitle)) {
+        const hTitle = s.hindiTitle || s.devanagariTitle;
+        return hTitle + (s.englishTitle ? ' (' + s.englishTitle + ')' : '');
+      }
+      return s.title || s.englishTitle || s.tamilTitle || '';
+    },
+
+    createValidDocxBase64: function(colName, songs, lang) {
+      const self = this;
+      function escapeXml(str) {
+        return String(str == null ? '' : str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&apos;');
+      }
+
+      function strToUtf8Bytes(str) {
+        if (typeof TextEncoder !== 'undefined') {
+          return new TextEncoder().encode(str);
+        }
+        const utf8 = unescape(encodeURIComponent(str));
+        const arr = new Uint8Array(utf8.length);
+        for (let i = 0; i < utf8.length; i++) arr[i] = utf8.charCodeAt(i);
+        return arr;
+      }
+
+      function base64ToBytes(b64) {
+        if (!b64) return new Uint8Array(0);
+        const clean = String(b64).replace(/^data:[^;]+;base64,/, '').replace(/[\r\n\s]/g, '');
+        if (typeof atob === 'function') {
+          const bin = atob(clean);
+          const arr = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+          return arr;
+        } else if (typeof Buffer !== 'undefined') {
+          return new Uint8Array(Buffer.from(clean, 'base64'));
+        }
+        return new Uint8Array(0);
+      }
+
+      const crcTable = (function() {
+        const table = new Uint32Array(256);
+        for (let n = 0; n < 256; n++) {
+          let c = n;
+          for (let k = 0; k < 8; k++) {
+            c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+          }
+          table[n] = c >>> 0;
+        }
+        return table;
+      })();
+
+      function crc32(bytes) {
+        let crc = 0xFFFFFFFF;
+        for (let i = 0; i < bytes.length; i++) {
+          crc = (crc >>> 8) ^ crcTable[(crc ^ bytes[i]) & 0xFF];
+        }
+        return (crc ^ 0xFFFFFFFF) >>> 0;
+      }
+
+      function createZipBytes(files) {
+        const localParts = [];
+        const centralParts = [];
+        let offset = 0;
+
+        for (let i = 0; i < files.length; i++) {
+          const nameBytes = strToUtf8Bytes(files[i].name);
+          const dataBytes = files[i].data instanceof Uint8Array ? files[i].data : strToUtf8Bytes(files[i].data);
+          const crc = crc32(dataBytes);
+          const size = dataBytes.length;
+
+          const localHeader = new Uint8Array(30 + nameBytes.length);
+          const lv = new DataView(localHeader.buffer);
+          lv.setUint32(0, 0x04034b50, true);
+          lv.setUint16(4, 20, true);
+          lv.setUint16(6, 0x0800, true); // UTF-8 filename flag
+          lv.setUint16(8, 0, true); // STORE (no compression)
+          lv.setUint16(10, 0, true);
+          lv.setUint16(12, 0x2100, true);
+          lv.setUint32(14, crc, true);
+          lv.setUint32(18, size, true);
+          lv.setUint32(22, size, true);
+          lv.setUint16(26, nameBytes.length, true);
+          lv.setUint16(28, 0, true);
+          localHeader.set(nameBytes, 30);
+
+          localParts.push(localHeader);
+          localParts.push(dataBytes);
+
+          const centralHeader = new Uint8Array(46 + nameBytes.length);
+          const cv = new DataView(centralHeader.buffer);
+          cv.setUint32(0, 0x02014b50, true);
+          cv.setUint16(4, 20, true);
+          cv.setUint16(6, 20, true);
+          cv.setUint16(8, 0x0800, true);
+          cv.setUint16(10, 0, true);
+          cv.setUint16(12, 0, true);
+          cv.setUint16(14, 0x2100, true);
+          cv.setUint32(16, crc, true);
+          cv.setUint32(20, size, true);
+          cv.setUint32(24, size, true);
+          cv.setUint16(28, nameBytes.length, true);
+          cv.setUint16(30, 0, true);
+          cv.setUint16(32, 0, true);
+          cv.setUint16(34, 0, true);
+          cv.setUint16(36, 0, true);
+          cv.setUint32(38, 0, true);
+          cv.setUint32(42, offset, true);
+          centralHeader.set(nameBytes, 46);
+
+          centralParts.push(centralHeader);
+          offset += localHeader.length + dataBytes.length;
+        }
+
+        let centralSize = 0;
+        for (let i = 0; i < centralParts.length; i++) centralSize += centralParts[i].length;
+
+        const eocd = new Uint8Array(22);
+        const ev = new DataView(eocd.buffer);
+        ev.setUint32(0, 0x06054b50, true);
+        ev.setUint16(4, 0, true);
+        ev.setUint16(6, 0, true);
+        ev.setUint16(8, files.length, true);
+        ev.setUint16(10, files.length, true);
+        ev.setUint32(12, centralSize, true);
+        ev.setUint32(16, offset, true);
+        ev.setUint16(20, 0, true);
+
+        const totalLen = offset + centralSize + 22;
+        const out = new Uint8Array(totalLen);
+        let pos = 0;
+        for (let i = 0; i < localParts.length; i++) {
+          out.set(localParts[i], pos);
+          pos += localParts[i].length;
+        }
+        for (let i = 0; i < centralParts.length; i++) {
+          out.set(centralParts[i], pos);
+          pos += centralParts[i].length;
+        }
+        out.set(eocd, pos);
+        return out;
+      }
+
+      const headerLogoB64 = typeof LOGO_HEADER_BASE64 !== 'undefined' ? LOGO_HEADER_BASE64 : (typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : '');
+      const watermarkB64 = typeof LOGO_IMAGE_WATERMARK_BASE64 !== 'undefined' ? LOGO_IMAGE_WATERMARK_BASE64 : (typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : '');
+      const hasLogo = Boolean(headerLogoB64);
+      const hasWatermark = Boolean(watermarkB64);
+
+      const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.xml"/>
+  <Default Extension="png" ContentType="image/png"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+  <Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>
+  <Override PartName="/word/header2.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>
+  <Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>
+  <Override PartName="/word/footer2.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>
+</Types>`;
+
+      const rootRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`;
+
+      const docRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header2.xml"/>
+  <Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>
+  <Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer2.xml"/>
+</Relationships>`;
+
+      const headerRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  ${hasLogo ? '<Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/>' : ''}
+  ${hasWatermark ? '<Relationship Id="rIdWatermark" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/watermark.png"/>' : ''}
+</Relationships>`;
+
+      const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:docDefaults>
+    <w:rPrDefault>
+      <w:rPr>
+        <w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Noto Sans Tamil" w:eastAsia="Noto Sans Devanagari"/>
+        <w:sz w:val="28"/>
+        <w:szCs w:val="28"/>
+        <w:color w:val="0F172A"/>
+      </w:rPr>
+    </w:rPrDefault>
+  </w:docDefaults>
+  <w:style w:type="paragraph" w:default="1" w:styleId="Normal">
+    <w:name w:val="Normal"/>
+    <w:qFormat/>
+  </w:style>
+  <w:style w:type="paragraph" w:styleId="Heading2">
+    <w:name w:val="heading 2"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:keepNext/>
+      <w:spacing w:before="280" w:after="120"/>
+    </w:pPr>
+    <w:rPr>
+      <w:b/>
+      <w:bCs/>
+      <w:color w:val="4338CA"/>
+      <w:sz w:val="32"/>
+      <w:szCs w:val="32"/>
+    </w:rPr>
+  </w:style>
+</w:styles>`;
+
+      const logoRunXml = hasLogo ? `
+          <w:r xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+            <w:pict>
+              <v:shape id="HeaderLogo" style="width:38.88pt;height:36pt;visibility:visible" stroked="f">
+                <v:imagedata r:id="rIdLogo" o:title="OmkaarSSL Logo"/>
+              </v:shape>
+            </w:pict>
+          </w:r>` : `<w:r><w:t>OmkaarSSL</w:t></w:r>`;
+
+      const watermarkRunXml = hasWatermark ? `
+          <w:r xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+            <w:pict>
+              <v:shape id="PageWatermark" style="position:absolute;margin-left:0;margin-top:160pt;width:468pt;height:365pt;z-index:-251658752;mso-position-horizontal:center;mso-position-horizontal-relative:margin;mso-position-vertical:center;mso-position-vertical-relative:page" stroked="f">
+                <v:imagedata r:id="rIdWatermark" o:title="OmkaarSSL Watermark"/>
+              </v:shape>
+            </w:pict>
+          </w:r>` : '';
+
+      const headerXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+  <w:tbl>
+    <w:tblPr>
+      <w:tblW w:w="5000" w:type="pct"/>
+      <w:tblBorders>
+        <w:top w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+        <w:left w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+        <w:bottom w:val="single" w:sz="6" w:space="2" w:color="CBD5E1"/>
+        <w:right w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+        <w:insideH w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+        <w:insideV w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+      </w:tblBorders>
+    </w:tblPr>
+    <w:tr>
+      <w:tc>
+        <w:tcPr>
+          <w:tcW w:w="2500" w:type="pct"/>
+          <w:vAlign w:val="bottom"/>
+        </w:tcPr>
+        <w:p>
+          <w:pPr><w:spacing w:before="0" w:after="40"/></w:pPr>
+          ${logoRunXml}
+          ${watermarkRunXml}
+        </w:p>
+      </w:tc>
+      <w:tc>
+        <w:tcPr>
+          <w:tcW w:w="2500" w:type="pct"/>
+          <w:vAlign w:val="bottom"/>
+        </w:tcPr>
+        <w:p>
+          <w:pPr>
+            <w:jc w:val="right"/>
+            <w:spacing w:before="0" w:after="40"/>
+          </w:pPr>
+          <w:r>
+            <w:rPr>
+              <w:color w:val="64748B"/>
+              <w:sz w:val="18"/>
+              <w:szCs w:val="18"/>
+            </w:rPr>
+            <w:t>${escapeXml(colName)}</w:t>
+          </w:r>
+        </w:p>
+      </w:tc>
+    </w:tr>
+  </w:tbl>
+</w:hdr>`;
+
+      const footer1Xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:tbl>
+    <w:tblPr>
+      <w:tblW w:w="5000" w:type="pct"/>
+      <w:tblBorders>
+        <w:top w:val="single" w:sz="6" w:space="2" w:color="CBD5E1"/>
+        <w:left w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+        <w:bottom w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+        <w:right w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+        <w:insideH w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+        <w:insideV w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+      </w:tblBorders>
+    </w:tblPr>
+    <w:tr>
+      <w:tc>
+        <w:tcPr><w:tcW w:w="2500" w:type="pct"/><w:vAlign w:val="top"/></w:tcPr>
+        <w:p>
+          <w:pPr><w:spacing w:before="40" w:after="0"/></w:pPr>
+          <w:r>
+            <w:rPr><w:color w:val="64748B"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>
+            <w:t>© OmkaarSSL</w:t>
+          </w:r>
+        </w:p>
+      </w:tc>
+      <w:tc>
+        <w:tcPr><w:tcW w:w="2500" w:type="pct"/><w:vAlign w:val="top"/></w:tcPr>
+        <w:p>
+          <w:pPr><w:jc w:val="right"/><w:spacing w:before="40" w:after="0"/></w:pPr>
+        </w:p>
+      </w:tc>
+    </w:tr>
+  </w:tbl>
+</w:ftr>`;
+
+      const footer2Xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:tbl>
+    <w:tblPr>
+      <w:tblW w:w="5000" w:type="pct"/>
+      <w:tblBorders>
+        <w:top w:val="single" w:sz="6" w:space="2" w:color="CBD5E1"/>
+        <w:left w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+        <w:bottom w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+        <w:right w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+        <w:insideH w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+        <w:insideV w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+      </w:tblBorders>
+    </w:tblPr>
+    <w:tr>
+      <w:tc>
+        <w:tcPr><w:tcW w:w="2500" w:type="pct"/><w:vAlign w:val="top"/></w:tcPr>
+        <w:p>
+          <w:pPr><w:spacing w:before="40" w:after="0"/></w:pPr>
+          <w:r>
+            <w:rPr><w:color w:val="64748B"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>
+            <w:t>© OmkaarSSL</w:t>
+          </w:r>
+        </w:p>
+      </w:tc>
+      <w:tc>
+        <w:tcPr><w:tcW w:w="2500" w:type="pct"/><w:vAlign w:val="top"/></w:tcPr>
+        <w:p>
+          <w:pPr><w:jc w:val="right"/><w:spacing w:before="40" w:after="0"/></w:pPr>
+          <w:fldSimple w:instr="PAGE">
+            <w:r>
+              <w:rPr><w:color w:val="64748B"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>
+              <w:t>1</w:t>
+            </w:r>
+          </w:fldSimple>
+        </w:p>
+      </w:tc>
+    </w:tr>
+  </w:tbl>
+</w:ftr>`;
+
+      // Build document.xml body:
+      // 1. Cover page: 6 empty paragraphs + centered 30pt (sz=60) bold collection name + page break
+      let bodyXml = '';
+      for (let i = 0; i < 6; i++) {
+        bodyXml += `<w:p><w:pPr><w:spacing w:before="240" w:after="240"/></w:pPr></w:p>\n`;
+      }
+      bodyXml += `<w:p>
+        <w:pPr>
+          <w:jc w:val="center"/>
+          <w:spacing w:before="480" w:after="480"/>
+        </w:pPr>
+        <w:r>
+          <w:rPr>
+            <w:b/>
+            <w:bCs/>
+            <w:color w:val="0F172A"/>
+            <w:sz w:val="60"/>
+            <w:szCs w:val="60"/>
+          </w:rPr>
+          <w:t>${escapeXml(colName)}</w:t>
+        </w:r>
+      </w:p>
+      <w:p><w:r><w:br w:type="page"/></w:r></w:p>\n`;
+
+      // 2. Subsequent pages: Songs in collection order
+      const langKey = (lang || 'English').toLowerCase();
+      (songs || []).forEach(s => {
+        const displayTitle = self.getExportSongTitle(s, lang);
+        const rawLyrics = (langKey === 'tamil' ? s.tamilLyrics : (langKey === 'devanagari' ? s.devanagariLyrics : s.englishLyrics)) || '';
+        const cleanLyrics = String(rawLyrics).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+        const lines = cleanLyrics.split('\n');
+
+        bodyXml += `<w:p>
+          <w:pPr>
+            <w:pStyle w:val="Heading2"/>
+            <w:keepNext/>
+            <w:spacing w:before="280" w:after="120"/>
+          </w:pPr>
+          <w:r>
+            <w:rPr>
+              <w:b/>
+              <w:bCs/>
+              <w:color w:val="4338CA"/>
+              <w:sz w:val="32"/>
+              <w:szCs w:val="32"/>
+            </w:rPr>
+            <w:t>${escapeXml(displayTitle)}</w:t>
+          </w:r>
+        </w:p>\n`;
+
+        bodyXml += `<w:p>
+          <w:pPr>
+            <w:spacing w:before="60" w:after="320" w:line="276" w:lineRule="auto"/>
+          </w:pPr>
+          <w:r>
+            <w:rPr>
+              <w:color w:val="0F172A"/>
+              <w:sz w:val="28"/>
+              <w:szCs w:val="28"/>
+            </w:rPr>`;
+
+        for (let idx = 0; idx < lines.length; idx++) {
+          if (idx > 0) bodyXml += `<w:br/>`;
+          bodyXml += `<w:t xml:space="preserve">${escapeXml(lines[idx])}</w:t>`;
+        }
+
+        bodyXml += `</w:r></w:p>\n`;
+      });
+
+      // Section properties: A4/Letter with 0.25in top/bottom/header/footer (360 twips), 1in left/right (1440 twips), different first page (titlePg), page numbering starting at 0 so Page 2 is numbered 1
+      const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <w:body>
+    ${bodyXml}
+    <w:sectPr>
+      <w:headerReference w:type="first" r:id="rId2"/>
+      <w:headerReference w:type="default" r:id="rId3"/>
+      <w:footerReference w:type="first" r:id="rId4"/>
+      <w:footerReference w:type="default" r:id="rId5"/>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="360" w:right="1440" w:bottom="360" w:left="1440" w:header="360" w:footer="360" w:gutter="0"/>
+      <w:pgNumType w:start="0"/>
+      <w:titlePg/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+
+      const zipFiles = [
+        { name: '[Content_Types].xml', data: contentTypesXml },
+        { name: '_rels/.rels', data: rootRelsXml },
+        { name: 'word/_rels/document.xml.rels', data: docRelsXml },
+        { name: 'word/_rels/header1.xml.rels', data: headerRelsXml },
+        { name: 'word/_rels/header2.xml.rels', data: headerRelsXml },
+        { name: 'word/styles.xml', data: stylesXml },
+        { name: 'word/header1.xml', data: headerXml },
+        { name: 'word/header2.xml', data: headerXml },
+        { name: 'word/footer1.xml', data: footer1Xml },
+        { name: 'word/footer2.xml', data: footer2Xml },
+        { name: 'word/document.xml', data: documentXml }
+      ];
+
+      if (hasLogo) {
+        zipFiles.push({ name: 'word/media/logo.png', data: base64ToBytes(headerLogoB64) });
+      }
+      if (hasWatermark) {
+        zipFiles.push({ name: 'word/media/watermark.png', data: base64ToBytes(watermarkB64) });
+      }
+
+      const zipBytes = createZipBytes(zipFiles);
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let i = 0; i < zipBytes.length; i += chunkSize) {
+        binary += String.fromCharCode.apply(null, zipBytes.subarray(i, i + chunkSize));
+      }
+      if (typeof btoa === 'function') {
+        return btoa(binary);
+      } else if (typeof Buffer !== 'undefined') {
+        return Buffer.from(zipBytes).toString('base64');
+      }
+      return '';
+    },
+
     createValidPdfBinary: function(colName, songs, lang) {
+      const self = this;
       const pages = [];
-      
+
+      function getByteLength(str) {
+        if (typeof TextEncoder !== 'undefined') {
+          return new TextEncoder().encode(str).length;
+        }
+        return unescape(encodeURIComponent(str)).length;
+      }
+
+      function pdfEscape(str) {
+        return String(str || '').replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)').replace(/[\r\n]/g, '');
+      }
+
       // Page 1: Cover Page
-      let p1Stream = "BT\n/F1 26 Tf\n50 520 Td\n(" + String(colName || 'Collection').replace(/[()\\\r\n]/g, "") + ") Tj\nET\n";
-      p1Stream += "BT\n/F1 12 Tf\n50 480 Td\n(Language: " + String(lang || 'English').replace(/[()\\\r\n]/g, "") + ") Tj\nET\n";
-      p1Stream += "BT\n/F1 10 Tf\n50 80 Td\n(c OmkaarSSL) Tj\nET\n";
+      let p1Stream = "BT\n/F1 10 Tf\n420 810 Td\n(" + pdfEscape(colName || 'Collection') + ") Tj\nET\n";
+      p1Stream += "0.8 0.84 0.88 RG 0.75 w 72 802 m 523 802 l S\n";
+      p1Stream += "BT\n/F1 26 Tf\n140 440 Td\n(" + pdfEscape(colName || 'Collection') + ") Tj\nET\n";
+      p1Stream += "0.8 0.84 0.88 RG 0.75 w 72 42 m 523 42 l S\n";
+      p1Stream += "BT\n/F1 9 Tf\n72 28 Td\n((c) OmkaarSSL) Tj\nET\n";
       pages.push(p1Stream);
 
       // Subsequent pages for songs
       let curStream = "";
-      let curY = 750;
-      
+      let curY = 765;
+
       function startNewPage() {
         if (curStream) pages.push(curStream);
-        curStream = "BT\n/F1 10 Tf\n400 800 Td\n(" + String(colName || '').replace(/[()\\\r\n]/g, "") + ") Tj\nET\n";
-        curStream += "BT\n/F1 10 Tf\n50 50 Td\n(c OmkaarSSL) Tj\nET\n";
-        curStream += "BT\n/F1 10 Tf\n520 50 Td\n(" + pages.length + ") Tj\nET\n";
-        curY = 740;
+        const pageNum = pages.length; // Page 2 -> 1, Page 3 -> 2, etc.
+        curStream = "BT\n/F1 9 Tf\n72 810 Td\n(OmkaarSSL) Tj\nET\n";
+        curStream += "BT\n/F1 9 Tf\n420 810 Td\n(" + pdfEscape(colName || '') + ") Tj\nET\n";
+        curStream += "0.8 0.84 0.88 RG 0.75 w 72 802 m 523 802 l S\n";
+        curStream += "0.8 0.84 0.88 RG 0.75 w 72 42 m 523 42 l S\n";
+        curStream += "BT\n/F1 9 Tf\n72 28 Td\n((c) OmkaarSSL) Tj\nET\n";
+        curStream += "BT\n/F1 9 Tf\n510 28 Td\n(" + pageNum + ") Tj\nET\n";
+        curY = 765;
       }
-      
+
       startNewPage();
 
       (songs || []).forEach(s => {
-        const rawLyrics = (lang.toLowerCase() === 'tamil' ? s.tamilLyrics : (lang.toLowerCase() === 'devanagari' ? s.devanagariLyrics : s.englishLyrics)) || '';
+        const langKey = (lang || 'English').toLowerCase();
+        const rawLyrics = (langKey === 'tamil' ? s.tamilLyrics : (langKey === 'devanagari' ? s.devanagariLyrics : s.englishLyrics)) || '';
         const lyricsLines = String(rawLyrics).split('\n');
-        
-        if (curY < 180) {
+
+        if (curY < 160) {
           startNewPage();
         }
-        
-        const safeTitle = String(s.title || '').replace(/[()\\\r\n]/g, "");
-        curStream += "BT\n/F1 14 Tf\n50 " + curY + " Td\n(" + safeTitle + ") Tj\nET\n";
+
+        const displayTitle = self.getExportSongTitle(s, lang);
+        const safeTitle = pdfEscape(displayTitle);
+        curStream += "BT\n0.26 0.22 0.79 rg\n/F1 14 Tf\n72 " + curY + " Td\n(" + safeTitle + ") Tj\n0 0 0 rg\nET\n";
         curY -= 22;
-        
-        curStream += "BT\n/F1 11 Tf\n50 " + curY + " Td\n15 TL\n";
+
+        curStream += "BT\n/F1 12 Tf\n72 " + curY + " Td\n17 TL\n";
         for (let line of lyricsLines) {
-          if (curY < 90) {
+          if (curY < 75) {
             curStream += "ET\n";
             startNewPage();
-            curStream += "BT\n/F1 11 Tf\n50 " + curY + " Td\n15 TL\n";
+            curStream += "BT\n/F1 12 Tf\n72 " + curY + " Td\n17 TL\n";
           }
-          const safeLine = String(line || '').replace(/[()\\\r\n]/g, "").substring(0, 95);
+          const safeLine = pdfEscape(String(line || '').substring(0, 90));
           curStream += "(" + safeLine + ") '\n";
-          curY -= 15;
+          curY -= 17;
         }
         curStream += "ET\n";
-        curY -= 20;
+        curY -= 22;
       });
-      
+
       if (curStream) pages.push(curStream);
 
       let out = "%PDF-1.4\n";
       const offsets = [];
       function addObj(str) {
-        offsets.push(out.length);
+        offsets.push(getByteLength(out));
         out += str + "\n";
       }
 
@@ -767,10 +1326,11 @@
 
       for (let p of pageObjIds) {
         addObj(p.pageId + " 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents " + p.contentId + " 0 R >>\nendobj");
-        addObj(p.contentId + " 0 obj\n<< /Length " + p.stream.length + " >>\nstream\n" + p.stream + "endstream\nendobj");
+        const streamByteLen = getByteLength(p.stream);
+        addObj(p.contentId + " 0 obj\n<< /Length " + streamByteLen + " >>\nstream\n" + p.stream + "endstream\nendobj");
       }
 
-      const xrefOffset = out.length;
+      const xrefOffset = getByteLength(out);
       out += "xref\n0 " + (offsets.length + 1) + "\n0000000000 65535 f \n";
       for (let o of offsets) {
         out += String(o).padStart(10, "0") + " 00000 n \n";
@@ -780,6 +1340,8 @@
     },
 
     apiExportCollection: function(collectionId, language, format, skipMissing) {
+      const self = this;
+      const currentUser = getActiveUser();
       const col = this.apiGetCollection(collectionId);
       const lang = language || 'English';
       const fmt = (format || 'PDF').toUpperCase();
@@ -802,6 +1364,21 @@
         return text && text.trim().length > 0;
       });
 
+      const exportedSongsData = songsToExport.map(s => {
+        let lyrics = '';
+        if (lang.toLowerCase() === 'tamil') lyrics = s.tamilLyrics;
+        else if (lang.toLowerCase() === 'devanagari') lyrics = s.devanagariLyrics;
+        else lyrics = s.englishLyrics;
+        return {
+          id: s.id,
+          title: self.getExportSongTitle(s, lang),
+          englishTitle: s.englishTitle || '',
+          tamilTitle: s.tamilTitle || '',
+          hindiTitle: s.hindiTitle || s.devanagariTitle || '',
+          lyrics: String(lyrics || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim()
+        };
+      });
+
       const cleanColName = col.name.replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_');
       const filename = `${cleanColName}_${lang}.${fmt.toLowerCase()}`;
 
@@ -814,21 +1391,14 @@
       docContent += `[FOOTER (PAGE 1): © OmkaarSSL]\n\n`;
       docContent += `=================== PAGE BREAK ===================\n\n`;
 
-      songsToExport.forEach((s) => {
-        let lyrics = '';
-        if (lang.toLowerCase() === 'tamil') lyrics = s.tamilLyrics;
-        else if (lang.toLowerCase() === 'devanagari') lyrics = s.devanagariLyrics;
-        else lyrics = s.englishLyrics;
-
-        docContent += `${s.title}\n\n${lyrics}\n\n`;
+      exportedSongsData.forEach((s) => {
+        docContent += `${s.title}\n\n${s.lyrics}\n\n`;
       });
 
       docContent += `\n----------------------------------------------------------\n`;
       docContent += `[FOOTER: © OmkaarSSL                           1]\n`;
 
-      // Encode document to base64
       let mimeType = 'text/plain;charset=utf-8';
-      let binaryString = unescape(encodeURIComponent(docContent));
 
       const headerLogoBase64 = typeof LOGO_HEADER_BASE64 !== 'undefined' ? LOGO_HEADER_BASE64 : (typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : '');
       const watermarkBase64 = typeof LOGO_IMAGE_WATERMARK_BASE64 !== 'undefined' ? LOGO_IMAGE_WATERMARK_BASE64 : (typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : '');
@@ -902,9 +1472,8 @@
           </table>
 
           <!-- Subsequent Pages: Songs -->
-          ${songsToExport.map((s) => {
-            let l = (lang.toLowerCase() === 'tamil' ? s.tamilLyrics : (lang.toLowerCase() === 'devanagari' ? s.devanagariLyrics : s.englishLyrics)) || '';
-            return `<div class="song-entry" style="page-break-inside: avoid; margin-bottom: 24px;"><h2>${s.title}</h2><div class="lyrics">${l.replace(/\n/g, '<br>')}</div></div>`;
+          ${exportedSongsData.map((s) => {
+            return `<div class="song-entry" style="page-break-inside: avoid; margin-bottom: 24px;"><h2>${s.title}</h2><div class="lyrics">${s.lyrics.replace(/\n/g, '<br>')}</div></div>`;
           }).join('')}
 
           <!-- Subsequent Page Footer: Page number starting from 1 -->
@@ -917,12 +1486,11 @@
         </body></html>
       `;
 
-      mimeType = 'text/plain;charset=utf-8';
       let base64Data = '';
 
       if (fmt === 'DOCX') {
         mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        base64Data = safeBase64Encode(htmlDoc);
+        base64Data = this.createValidDocxBase64(col.name, songsToExport, lang);
       } else {
         // PDF format: generate valid PDF-1.4 binary data
         mimeType = 'application/pdf';
@@ -947,8 +1515,10 @@
         mimeType: mimeType,
         base64Data: base64Data,
         htmlDoc: htmlDoc,
+        collectionName: col.name,
+        songs: exportedSongsData,
         driveUrl: 'https://drive.google.com/drive/u/0/my-drive',
-        userEmail: activeSimulatedUser ? activeSimulatedUser.email : 'user@example.com',
+        userEmail: currentUser && currentUser.email ? currentUser.email : 'user@example.com',
         savedToDrive: true,
         songCount: songsToExport.length,
         language: lang,

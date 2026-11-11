@@ -322,6 +322,7 @@ function handleGoogleUserProfile(payload) {
   }
 
   localStorage.setItem('GOOGLE_OAUTH_USER', JSON.stringify(userObj));
+  localStorage.setItem('SIMULATED_USER', JSON.stringify(userObj));
   state.currentUser = userObj;
 
   if (authResult.isAuthorized) {
@@ -512,6 +513,7 @@ async function checkAuthentication() {
           const authCheck = checkEmailAuthorization(oauthUser.email, oauthUser.domain);
           oauthUser.isDomainAllowed = authCheck.isAuthorized;
           oauthUser.isAuthorized = authCheck.isAuthorized;
+          localStorage.setItem('SIMULATED_USER', JSON.stringify(oauthUser));
           state.currentUser = oauthUser;
 
           if (authCheck.isAuthorized) {
@@ -1795,48 +1797,369 @@ window.executeExport = async function() {
 };
 
 /**
- * Generate and download valid binary PDF document
+ * Generate and download valid binary PDF document matching Google Apps Script ExportService.gs
  */
 async function generateAndDownloadPdf(result) {
-  if (typeof html2pdf !== 'undefined' && result.htmlDoc) {
-    const container = document.createElement('div');
-    container.id = 'pdf-render-container';
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.top = '0';
-    container.style.width = '794px'; // Standard A4 width at 96 DPI
-    container.style.background = '#ffffff';
-    container.style.color = '#0f172a';
-    container.style.padding = '0';
-    container.style.boxSizing = 'border-box';
-    container.innerHTML = result.htmlDoc;
-    document.body.appendChild(container);
-
-    try {
-      const opt = {
-        margin: [10, 10, 10, 10], // 10mm margins
-        filename: result.filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-      };
-
-      await html2pdf().from(container).set(opt).save();
-    } catch (pdfErr) {
-      console.warn('html2pdf generation warning, falling back to binary blob download:', pdfErr);
-      if (result.base64Data) {
-        downloadExportBlob(result.base64Data, result.filename, 'application/pdf');
-      }
-    } finally {
-      if (container.parentNode) {
-        container.parentNode.removeChild(container);
-      }
+  try {
+    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch (e) {}
     }
-  } else if (result.base64Data) {
-    // Direct valid binary blob download
-    downloadExportBlob(result.base64Data, result.filename, 'application/pdf');
+
+    function loadB64Image(b64) {
+      return new Promise((resolve) => {
+        if (!b64 || typeof Image === 'undefined') return resolve(null);
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = b64.startsWith('data:') ? b64 : ('data:image/png;base64,' + b64);
+      });
+    }
+
+    const headerLogoB64 = typeof LOGO_HEADER_BASE64 !== 'undefined' ? LOGO_HEADER_BASE64 : (typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : '');
+    const watermarkB64 = typeof LOGO_IMAGE_WATERMARK_BASE64 !== 'undefined' ? LOGO_IMAGE_WATERMARK_BASE64 : (typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : '');
+
+    const [logoImg, watermarkImg] = await Promise.all([
+      loadB64Image(headerLogoB64),
+      loadB64Image(watermarkB64)
+    ]);
+
+    // Standard 150 DPI A4 dimensions: 8.27in x 11.69in = 1240px x 1754px
+    const PAGE_W = 1240;
+    const PAGE_H = 1754;
+    const MARGIN_X = 150; // 1.0in left & right margins
+    const CONTENT_W = PAGE_W - (MARGIN_X * 2); // 940px
+    const HEADER_TOP = 38; // 0.25in header margin
+    const HEADER_LINE_Y = 122;
+    const CONTENT_TOP = 165;
+    const CONTENT_BOTTOM = 1620;
+    const FOOTER_LINE_Y = 1665;
+    const FOOTER_TEXT_Y = 1696;
+    const FONT_STACK = "'Inter', 'Noto Sans Tamil', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif";
+
+    const colName = result.collectionName || (state.exportModalData && state.exportModalData.collectionName) || 'Song Collection';
+    const songs = Array.isArray(result.songs) ? result.songs : [];
+
+    function wrapTextLines(ctx, text, maxWidth) {
+      const rawLines = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+      const wrapped = [];
+      for (let r = 0; r < rawLines.length; r++) {
+        const line = rawLines[r];
+        if (!line || line.trim().length === 0) {
+          wrapped.push('');
+          continue;
+        }
+        const words = line.split(' ');
+        let currentLine = words[0] || '';
+        for (let i = 1; i < words.length; i++) {
+          const word = words[i];
+          const testLine = currentLine + ' ' + word;
+          if (ctx.measureText(testLine).width <= maxWidth) {
+            currentLine = testLine;
+          } else {
+            wrapped.push(currentLine);
+            currentLine = word;
+          }
+        }
+        wrapped.push(currentLine);
+      }
+      return wrapped;
+    }
+
+    function createPageCanvas(pageNumberText) {
+      const canvas = document.createElement('canvas');
+      canvas.width = PAGE_W;
+      canvas.height = PAGE_H;
+      const ctx = canvas.getContext('2d');
+
+      // White page background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, PAGE_W, PAGE_H);
+
+      // 1. Center Watermark behind text (matching ExportService.gs watermark)
+      if (watermarkImg && watermarkImg.width > 0) {
+        const wmWidth = 820;
+        const wmHeight = (watermarkImg.height / watermarkImg.width) * wmWidth;
+        const wmX = (PAGE_W - wmWidth) / 2;
+        const wmY = (PAGE_H - wmHeight) / 2;
+        ctx.save();
+        ctx.drawImage(watermarkImg, wmX, wmY, wmWidth, wmHeight);
+        ctx.restore();
+      }
+
+      // 2. Header: Logo on bottom-left (0.54in x 0.5in = 81px x 75px), Collection Name on bottom-right, Horizontal Rule below
+      if (logoImg && logoImg.width > 0) {
+        ctx.drawImage(logoImg, MARGIN_X, HEADER_TOP, 81, 75);
+      } else {
+        ctx.font = `bold 20px ${FONT_STACK}`;
+        ctx.fillStyle = '#0f172a';
+        ctx.textAlign = 'left';
+        ctx.fillText('OmkaarSSL', MARGIN_X, HEADER_LINE_Y - 12);
+      }
+
+      ctx.font = `400 19px ${FONT_STACK}`;
+      ctx.fillStyle = '#64748b';
+      ctx.textAlign = 'right';
+      ctx.fillText(colName, PAGE_W - MARGIN_X, HEADER_LINE_Y - 10);
+
+      ctx.beginPath();
+      ctx.moveTo(MARGIN_X, HEADER_LINE_Y);
+      ctx.lineTo(PAGE_W - MARGIN_X, HEADER_LINE_Y);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // 3. Footer: Horizontal Rule above, © OmkaarSSL on left, Page Number on right (blank on Page 1, 1..N on Pages 2+)
+      ctx.beginPath();
+      ctx.moveTo(MARGIN_X, FOOTER_LINE_Y);
+      ctx.lineTo(PAGE_W - MARGIN_X, FOOTER_LINE_Y);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.font = `400 19px ${FONT_STACK}`;
+      ctx.fillStyle = '#64748b';
+      ctx.textAlign = 'left';
+      ctx.fillText('© OmkaarSSL', MARGIN_X, FOOTER_TEXT_Y);
+
+      if (pageNumberText !== '') {
+        ctx.textAlign = 'right';
+        ctx.fillText(String(pageNumberText), PAGE_W - MARGIN_X, FOOTER_TEXT_Y);
+      }
+
+      return { canvas, ctx };
+    }
+
+    const pageJpegs = [];
+
+    function pushCanvasToJpegs(canvas) {
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      const b64 = dataUrl.split(',')[1];
+      const binStr = atob(b64);
+      const bytes = new Uint8Array(binStr.length);
+      for (let i = 0; i < binStr.length; i++) {
+        bytes[i] = binStr.charCodeAt(i);
+      }
+      pageJpegs.push({ bytes, width: PAGE_W, height: PAGE_H });
+    }
+
+    // --- PAGE 1: COVER PAGE (No page number in footer) ---
+    const coverPage = createPageCanvas('');
+    const cCtx = coverPage.ctx;
+    cCtx.font = `bold 62px ${FONT_STACK}`;
+    cCtx.fillStyle = '#0f172a';
+    cCtx.textAlign = 'center';
+    const coverTitleLines = wrapTextLines(cCtx, colName, CONTENT_W - 60);
+    const totalCoverHeight = coverTitleLines.length * 78;
+    let coverY = (PAGE_H / 2) - (totalCoverHeight / 2) + 20;
+    for (let i = 0; i < coverTitleLines.length; i++) {
+      cCtx.fillText(coverTitleLines[i], PAGE_W / 2, coverY);
+      coverY += 78;
+    }
+    pushCanvasToJpegs(coverPage.canvas);
+
+    // --- SUBSEQUENT PAGES: SONGS (Numbered starting at 1 on Page 2) ---
+    let songPageNum = 1;
+    let currentPage = createPageCanvas(songPageNum);
+    let curY = CONTENT_TOP;
+
+    const TITLE_LINE_H = 44;
+    const LYRIC_LINE_H = 42;
+
+    for (let sIdx = 0; sIdx < songs.length; sIdx++) {
+      const song = songs[sIdx];
+      const ctx = currentPage.ctx;
+
+      ctx.font = `bold 31px ${FONT_STACK}`;
+      const titleLines = wrapTextLines(ctx, song.title || '', CONTENT_W);
+
+      ctx.font = `400 29px ${FONT_STACK}`;
+      const lyricLines = wrapTextLines(ctx, song.lyrics || '', CONTENT_W);
+
+      // Ensure song title + at least 2 lines of lyrics fit on current page before starting song
+      const minRequiredHeight = (titleLines.length * TITLE_LINE_H) + 14 + Math.min(2, lyricLines.length) * LYRIC_LINE_H;
+      if (curY > CONTENT_TOP && (curY + minRequiredHeight > CONTENT_BOTTOM)) {
+        pushCanvasToJpegs(currentPage.canvas);
+        songPageNum++;
+        currentPage = createPageCanvas(songPageNum);
+        curY = CONTENT_TOP;
+      }
+
+      // Draw Song Title (Heading 2 style: #4338ca bold, no song numbering)
+      currentPage.ctx.font = `bold 31px ${FONT_STACK}`;
+      currentPage.ctx.fillStyle = '#4338ca';
+      currentPage.ctx.textAlign = 'left';
+      for (let t = 0; t < titleLines.length; t++) {
+        if (curY + TITLE_LINE_H > CONTENT_BOTTOM) {
+          pushCanvasToJpegs(currentPage.canvas);
+          songPageNum++;
+          currentPage = createPageCanvas(songPageNum);
+          curY = CONTENT_TOP;
+          currentPage.ctx.font = `bold 31px ${FONT_STACK}`;
+          currentPage.ctx.fillStyle = '#4338ca';
+          currentPage.ctx.textAlign = 'left';
+        }
+        currentPage.ctx.fillText(titleLines[t], MARGIN_X, curY + 28);
+        curY += TITLE_LINE_H;
+      }
+
+      curY += 12;
+
+      // Draw Song Lyrics (14pt = 29px at 150 DPI, #0f172a)
+      currentPage.ctx.font = `400 29px ${FONT_STACK}`;
+      currentPage.ctx.fillStyle = '#0f172a';
+      currentPage.ctx.textAlign = 'left';
+
+      for (let l = 0; l < lyricLines.length; l++) {
+        if (curY + LYRIC_LINE_H > CONTENT_BOTTOM) {
+          pushCanvasToJpegs(currentPage.canvas);
+          songPageNum++;
+          currentPage = createPageCanvas(songPageNum);
+          curY = CONTENT_TOP;
+          currentPage.ctx.font = `400 29px ${FONT_STACK}`;
+          currentPage.ctx.fillStyle = '#0f172a';
+          currentPage.ctx.textAlign = 'left';
+        }
+        if (lyricLines[l] !== '') {
+          currentPage.ctx.fillText(lyricLines[l], MARGIN_X, curY + 26);
+        }
+        curY += LYRIC_LINE_H;
+      }
+
+      curY += 42; // Space after song
+    }
+
+    pushCanvasToJpegs(currentPage.canvas);
+
+    // Build standard PDF-1.4 binary with /DCTDecode JPEG page streams
+    const pdfBytes = buildPdfFromJpegPages(pageJpegs);
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = result.filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(link.href);
+      link.remove();
+    }, 1000);
+  } catch (pdfErr) {
+    console.warn('Canvas PDF generation fallback to binary blob download:', pdfErr);
+    if (result.base64Data) {
+      downloadExportBlob(result.base64Data, result.filename, 'application/pdf');
+    }
   }
+}
+
+/**
+ * Assemble array of { bytes: Uint8Array, width, height } JPEG images into a valid multi-page PDF-1.4 Uint8Array
+ */
+function buildPdfFromJpegPages(jpegPages) {
+  const chunks = [];
+  const offsets = [];
+  let byteOffset = 0;
+
+  function pushStr(str) {
+    const arr = new Uint8Array(str.length);
+    for (let i = 0; i < str.length; i++) {
+      arr[i] = str.charCodeAt(i) & 0xFF;
+    }
+    chunks.push(arr);
+    byteOffset += arr.length;
+  }
+
+  function pushBytes(arr) {
+    chunks.push(arr);
+    byteOffset += arr.length;
+  }
+
+  function startObj(id) {
+    offsets[id] = byteOffset;
+    pushStr(id + ' 0 obj\n');
+  }
+
+  function endObj() {
+    pushStr('\nendobj\n');
+  }
+
+  // PDF Header
+  pushStr('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+
+  // Object 1: Catalog
+  startObj(1);
+  pushStr('<< /Type /Catalog /Pages 2 0 R >>');
+  endObj();
+
+  const numPages = jpegPages.length;
+  const pageIds = [];
+  let nextObjId = 3;
+
+  for (let i = 0; i < numPages; i++) {
+    pageIds.push({
+      pageId: nextObjId,
+      contentId: nextObjId + 1,
+      imgId: nextObjId + 2,
+      page: jpegPages[i]
+    });
+    nextObjId += 3;
+  }
+
+  // Object 2: Pages
+  startObj(2);
+  const kids = pageIds.map(p => p.pageId + ' 0 R').join(' ');
+  pushStr('<< /Type /Pages /Kids [' + kids + '] /Count ' + numPages + ' >>');
+  endObj();
+
+  // Page, Content Stream, and Image XObject for each page (A4: 595.28 x 841.89 pt)
+  const PDF_W = 595.28;
+  const PDF_H = 841.89;
+
+  for (let i = 0; i < pageIds.length; i++) {
+    const item = pageIds[i];
+    const imgName = '/Im' + i;
+    const contentStream = 'q\n' + PDF_W + ' 0 0 ' + PDF_H + ' 0 0 cm\n' + imgName + ' Do\nQ\n';
+
+    // Page object
+    startObj(item.pageId);
+    pushStr(
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + PDF_W + ' ' + PDF_H + '] ' +
+      '/Resources << /XObject << ' + imgName + ' ' + item.imgId + ' 0 R >> >> ' +
+      '/Contents ' + item.contentId + ' 0 R >>'
+    );
+    endObj();
+
+    // Content stream object
+    startObj(item.contentId);
+    pushStr('<< /Length ' + contentStream.length + ' >>\nstream\n' + contentStream + 'endstream');
+    endObj();
+
+    // JPEG Image XObject
+    startObj(item.imgId);
+    pushStr(
+      '<< /Type /XObject /Subtype /Image ' +
+      '/Width ' + item.page.width + ' /Height ' + item.page.height + ' ' +
+      '/ColorSpace /DeviceRGB /BitsPerComponent 8 ' +
+      '/Filter /DCTDecode /Length ' + item.page.bytes.length + ' >>\nstream\n'
+    );
+    pushBytes(item.page.bytes);
+    pushStr('\nendstream');
+    endObj();
+  }
+
+  const totalObjs = nextObjId;
+  const xrefStart = byteOffset;
+  pushStr('xref\n0 ' + totalObjs + '\n0000000000 65535 f \n');
+  for (let id = 1; id < totalObjs; id++) {
+    pushStr(String(offsets[id]).padStart(10, '0') + ' 00000 n \n');
+  }
+  pushStr('trailer\n<< /Size ' + totalObjs + ' /Root 1 0 R >>\nstartxref\n' + xrefStart + '\n%%EOF\n');
+
+  const out = new Uint8Array(byteOffset);
+  let pos = 0;
+  for (let i = 0; i < chunks.length; i++) {
+    out.set(chunks[i], pos);
+    pos += chunks[i].length;
+  }
+  return out;
 }
 
 /**
