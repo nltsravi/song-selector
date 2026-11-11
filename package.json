@@ -5,10 +5,14 @@
   "scripts": {
     "dev": "python3 -m http.server 3000 --directory public",
     "start": "python3 -m http.server 3000 --directory public",
-    "test": "node tests/test-backend.js && node tests/test-static-spa.js && node tests/test-google-oauth.js",
+    "test": "node tests/test-backend.js && node tests/test-static-spa.js && node tests/test-google-oauth.js && node tests/test-mobile-hybrid.js",
     "sync-songs": "node scripts/download-songs.js",
     "sync-auth": "node scripts/build-auth-config.js",
     "build": "node scripts/download-songs.js && node scripts/build-auth-config.js",
+    "mobile:sync": "node scripts/build-auth-config.js && npx cap sync",
+    "mobile:copy": "node scripts/build-auth-config.js && npx cap copy",
+    "mobile:android": "npx cap open android",
+    "mobile:ios": "npx cap open ios",
     "deploy:pages": "node scripts/build-auth-config.js && git push origin $(git subtree split --prefix public):refs/heads/gh-pages --force",
     "deploy": "node deploy.js deploy",
     "push": "node deploy.js push",
@@ -27,6 +31,17 @@
   "author": "Ravishankar Jayaraman",
   "license": "MIT",
   "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/ios": "^8.6.0",
+    "@capacitor/share": "^8.0.3",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4",
     "html2pdf.js": "^0.14.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.0"
   }
 }
