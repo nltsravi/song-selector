@@ -122,6 +122,9 @@ body {
   padding: 1.5rem 1rem;
   position: relative;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 /* Embedded Google Sites / iframe Mode */
@@ -2515,6 +2518,19 @@ h1, h2, h3, h4, .font-heading {
   background: rgba(2, 132, 199, 0.08);
 }
 
+.header-nav-link.active {
+  color: var(--primary);
+  background: rgba(2, 132, 199, 0.12);
+  font-weight: 600;
+}
+
+/* Page Content Stretch so footer stays at bottom */
+#app-main-content,
+.auth-hero-container,
+.legal-container {
+  flex: 1 0 auto;
+}
+
 /* Export Google Drive Cloud Notice */
 .export-drive-notice {
   margin-top: 1rem;
@@ -2532,11 +2548,13 @@ h1, h2, h3, h4, .font-heading {
 
 /* Application Footer */
 .app-footer {
-  margin-top: 3rem;
-  padding: 2rem 1.5rem;
+  margin-top: auto;
+  padding: 2.5rem 1.5rem 1.5rem;
   border-top: 1px solid var(--border-card);
   text-align: center;
   background: transparent;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .footer-inner {
@@ -2567,6 +2585,11 @@ h1, h2, h3, h4, .font-heading {
 .footer-link:hover {
   color: var(--primary);
   text-decoration: underline;
+}
+
+.footer-link.active {
+  color: var(--primary);
+  font-weight: 600;
 }
 
 .footer-bullet {
