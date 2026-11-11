@@ -33,7 +33,10 @@ const androidWebAssetsIndex = path.join(androidDir, 'app/src/main/assets/public/
 
 assert(fs.existsSync(androidDir), 'android/ directory must exist');
 assert(fs.existsSync(androidManifestPath), 'AndroidManifest.xml must exist');
-assert(fs.existsSync(androidBuildGradlePath), 'android/app/build.gradle must exist');
+const buildGradleCode = fs.readFileSync(androidBuildGradlePath, 'utf8');
+assert(buildGradleCode.includes('signingConfigs') && buildGradleCode.includes('release'), 'android/app/build.gradle must configure production release signingConfig for Play Store AAB');
+assert(buildGradleCode.includes('upload-keystore.jks'), 'android/app/build.gradle must reference upload-keystore.jks');
+assert(fs.existsSync(path.join(androidDir, 'app/upload-keystore.jks')), 'Production upload keystore (android/app/upload-keystore.jks) must exist');
 assert(fs.existsSync(androidMainActivityPath), 'Android MainActivity.java must exist');
 assert(fs.existsSync(androidWebAssetsIndex), 'Android bundled web assets (index.html) must be synced');
 
@@ -81,6 +84,7 @@ const workflowYaml = fs.readFileSync(path.join(__dirname, '../.github/workflows/
 assert(indexHtml.includes('capacitor-bridge.js'), 'public/index.html must load capacitor-bridge.js');
 assert(appJs.includes('NativeMobileBridge.saveAndShareFile'), 'public/app.js must invoke NativeMobileBridge.saveAndShareFile for mobile PDF/DOCX exports');
 assert(appJs.includes('NativeMobileBridge.openMobileGoogleSignInModal'), 'public/app.js must support NativeMobileBridge.openMobileGoogleSignInModal');
+assert(workflowYaml.includes('bundleRelease'), 'deploy.yml must build the production Play Store AAB (bundleRelease)');
 assert(workflowYaml.includes('assembleDebug'), 'deploy.yml must build the Android hybrid APK');
 assert(workflowYaml.includes('npx cap copy'), 'deploy.yml must sync web assets to Android and iOS projects');
 

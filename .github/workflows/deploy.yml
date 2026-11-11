@@ -54,17 +54,26 @@ jobs:
         run: |
           npm test
 
-      - name: Build Android Hybrid App APK (Gradle)
+      - name: Build Production Play Store AAB & Android APKs (Gradle)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew bundleRelease assembleRelease assembleDebug
 
-      - name: Upload Android APK Artifact
+      - name: Upload Production Google Play Store AAB Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SongSelector-Android-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: SongSelector-PlayStore-Production-AAB
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Upload Android Release & Debug APK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SongSelector-Android-APKs
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: warn
 
       - name: Upload iOS Hybrid Xcode Project Artifact
