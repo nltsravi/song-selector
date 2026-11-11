@@ -24,7 +24,10 @@ const ASSETS_TO_CACHE = [
   './html2pdf.bundle.min.js',
   './songs.json',
   './manifest.json',
-  './images/omkaarssl-logo-transperent-black.png'
+  './favicon.ico',
+  './images/app-logo.png',
+  './images/icon-192x192.png',
+  './images/icon-512x512.png'
 ];
 
 self.addEventListener('install', (event) => {
