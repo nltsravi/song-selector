@@ -15,5 +15,5 @@ window.AUTH_CONFIG = {
     "tirwin.in"
   ],
   "REQUIRE_AUTHORIZATION": true,
-  "GENERATED_AT": "2026-11-11T08:54:56.767Z"
+  "GENERATED_AT": "2026-11-11T08:54:59.969Z"
 };
