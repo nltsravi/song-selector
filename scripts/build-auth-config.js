@@ -48,11 +48,13 @@ function main() {
     ''
   ).trim();
 
-  // 2. Read Authorized Users / Emails from Git Secret / Process Env or .env
+  // 2. Read Authorized Email IDs from Git Variable / Secret (AUTHORIZED_EMAIL_IDS) / Process Env or .env
   const rawEmails = (
+    process.env.AUTHORIZED_EMAIL_IDS ||
     process.env.AUTHORIZED_USERS ||
     process.env.AUTHORIZED_EMAILS ||
     process.env.GIT_SECRET_AUTHORIZED_EMAILS ||
+    fileEnv.AUTHORIZED_EMAIL_IDS ||
     fileEnv.AUTHORIZED_USERS ||
     fileEnv.AUTHORIZED_EMAILS ||
     fileEnv.GIT_SECRET_AUTHORIZED_EMAILS ||
@@ -77,6 +79,7 @@ function main() {
 
   const authConfig = {
     GOOGLE_CLIENT_ID: googleClientId,
+    AUTHORIZED_EMAIL_IDS: authorizedEmails.join(', '),
     AUTHORIZED_EMAILS: authorizedEmails,
     ALLOWED_DOMAINS: allowedDomains,
     REQUIRE_AUTHORIZATION: true,

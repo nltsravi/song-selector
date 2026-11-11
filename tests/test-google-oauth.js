@@ -17,18 +17,20 @@ assert(fs.existsSync(authConfigJsPath), 'public/auth-config.js must exist');
 assert(fs.existsSync(authConfigJsonPath), 'public/auth-config.json must exist');
 
 const authConfig = JSON.parse(fs.readFileSync(authConfigJsonPath, 'utf8'));
+assert(typeof authConfig.AUTHORIZED_EMAIL_IDS === 'string' && authConfig.AUTHORIZED_EMAIL_IDS.length > 0, 'AUTHORIZED_EMAIL_IDS must be a comma-separated string');
 assert(Array.isArray(authConfig.AUTHORIZED_EMAILS), 'AUTHORIZED_EMAILS must be an array');
 assert(authConfig.AUTHORIZED_EMAILS.length > 0, 'Authorized emails list must not be empty');
 assert(Array.isArray(authConfig.ALLOWED_DOMAINS), 'ALLOWED_DOMAINS must be an array');
 assert(authConfig.REQUIRE_AUTHORIZATION === true, 'REQUIRE_AUTHORIZATION must be true');
 
-console.log(`✓ Authorized emails loaded from secret: ${authConfig.AUTHORIZED_EMAILS.join(', ')}`);
+console.log(`✓ AUTHORIZED_EMAIL_IDS loaded from Git variable: ${authConfig.AUTHORIZED_EMAIL_IDS}`);
 console.log(`✓ Allowed domains: ${authConfig.ALLOWED_DOMAINS.join(', ')}`);
 
 // 2. Test Email Authorization Rules
 console.log('\nTest 2: Email Authorization Decision Matrix');
 function checkEmailAuthorization(email, domain, config) {
-  const authorizedEmails = (config.AUTHORIZED_EMAILS || []).map(e => e.trim().toLowerCase());
+  const raw = config.AUTHORIZED_EMAIL_IDS || config.AUTHORIZED_EMAILS || '';
+  const authorizedEmails = (typeof raw === 'string' ? raw.split(',') : raw).map(e => e.trim().toLowerCase()).filter(Boolean);
   const allowedDomains = (config.ALLOWED_DOMAINS || []).map(d => d.trim().toLowerCase());
 
   const cleanEmail = (email || '').trim().toLowerCase();

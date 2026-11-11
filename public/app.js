@@ -264,17 +264,35 @@ function decodeJwt(token) {
 }
 
 /**
- * Helper: Check if an email or domain is authorized via window.AUTH_CONFIG (read from Git Secret)
+ * Helper: Parse comma-separated AUTHORIZED_EMAIL_IDS from window.AUTH_CONFIG
+ */
+function getAuthorizedEmailIdsList(config) {
+  const cfg = config || window.AUTH_CONFIG || {};
+  const raw = cfg.AUTHORIZED_EMAIL_IDS || cfg.AUTHORIZED_EMAILS || '';
+  if (Array.isArray(raw)) {
+    return raw.map(e => String(e || '').trim().toLowerCase()).filter(Boolean);
+  }
+  if (typeof raw === 'string') {
+    return raw
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(e => e.length > 0 && e.includes('@'));
+  }
+  return [];
+}
+
+/**
+ * Helper: Check if an email is authorized via window.AUTH_CONFIG.AUTHORIZED_EMAIL_IDS (read from Git Variable / Secret)
  */
 function checkEmailAuthorization(email, domain) {
   const config = window.AUTH_CONFIG || {};
-  const authorizedEmails = (config.AUTHORIZED_EMAILS || []).map(e => e.trim().toLowerCase());
+  const authorizedEmails = getAuthorizedEmailIdsList(config);
   const allowedDomains = (config.ALLOWED_DOMAINS || []).map(d => d.trim().toLowerCase());
 
   const cleanEmail = (email || '').trim().toLowerCase();
   const cleanDomain = (domain || cleanEmail.split('@')[1] || '').trim().toLowerCase();
 
-  // 1. Direct match in authorized email list (from Git Secret)
+  // 1. Direct match in AUTHORIZED_EMAIL_IDS list (from Git Variable / Secret)
   if (cleanEmail && authorizedEmails.includes(cleanEmail)) {
     return { isAuthorized: true, reason: 'EMAIL_AUTHORIZED' };
   }
@@ -317,7 +335,7 @@ function handleGoogleUserProfile(payload) {
   if (!authResult.isAuthorized) {
     userObj.error = {
       code: 'UNAUTHORIZED_EMAIL',
-      message: `You are signed in as ${email}, but this account is not in the authorized users list.`
+      message: `Unauthorized Access: ${email} is not in the AUTHORIZED_EMAIL_IDS list.`
     };
   }
 
@@ -331,8 +349,53 @@ function handleGoogleUserProfile(payload) {
     loadSongs();
     loadCollections();
   } else {
+    showToast(`Access denied for ${email}. Account is not authorized.`, 'error');
     renderRequestAccessState(userObj);
   }
+}
+
+/**
+ * Check URL hash for OAuth 2.0 redirect callback (#id_token=... or #access_token=...)
+ */
+async function handleOAuthRedirectCallback() {
+  if (typeof window === 'undefined' || !window.location || !window.location.hash) return false;
+  const hash = window.location.hash.substring(1);
+  if (!hash.includes('id_token=') && !hash.includes('access_token=')) return false;
+
+  const params = new URLSearchParams(hash);
+  const idToken = params.get('id_token');
+  const accessToken = params.get('access_token');
+
+  // Clean URL hash so tokens are not left in address bar
+  try {
+    window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+  } catch (e) {}
+
+  if (idToken) {
+    const payload = decodeJwt(idToken);
+    if (payload && payload.email) {
+      handleGoogleUserProfile(payload);
+      return true;
+    }
+  }
+
+  if (accessToken) {
+    try {
+      const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (res.ok) {
+        const profile = await res.json();
+        if (profile && profile.email) {
+          handleGoogleUserProfile(profile);
+          return true;
+        }
+      }
+    } catch (err) {
+      console.error('OAuth redirect userinfo error:', err);
+    }
+  }
+  return false;
 }
 
 /**
@@ -469,6 +532,7 @@ function promptDevGoogleLogin() {
  */
 window.googleSignOut = function() {
   localStorage.removeItem('GOOGLE_OAUTH_USER');
+  localStorage.removeItem('SIMULATED_USER');
   if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
     try { google.accounts.id.disableAutoSelect(); } catch (e) {}
   }
@@ -487,6 +551,7 @@ window.googleSignOut = function() {
  */
 window.googleSwitchAccount = function() {
   localStorage.removeItem('GOOGLE_OAUTH_USER');
+  localStorage.removeItem('SIMULATED_USER');
   if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
     try { google.accounts.id.disableAutoSelect(); } catch (e) {}
   }
@@ -504,6 +569,12 @@ window.googleSwitchAccount = function() {
  */
 async function checkAuthentication() {
   try {
+    // 0. Check if returning from Google OAuth 2.0 redirect flow (#id_token=... or #access_token=...)
+    const handledRedirect = await handleOAuthRedirectCallback();
+    if (handledRedirect) {
+      return;
+    }
+
     // 1. Check for stored Google OAuth session
     const storedOauth = localStorage.getItem('GOOGLE_OAUTH_USER');
     if (storedOauth) {
@@ -531,7 +602,16 @@ async function checkAuthentication() {
       }
     }
 
-    // 2. Check Backend / Apps Script / MockBackend session
+    // In static SPA mode (GitHub Pages / standalone), require explicit Google OAuth login first
+    if (!isGasEnvironment) {
+      renderUnauthenticatedState({
+        message: 'Please sign in with your Google account to access the Song Collection & Lyrics Library.'
+      });
+      initGoogleOAuth();
+      return;
+    }
+
+    // 2. Check Google Apps Script Backend session when running inside GAS
     const user = await API.call('apiGetCurrentUser');
     state.currentUser = user;
 
@@ -541,15 +621,10 @@ async function checkAuthentication() {
       return;
     }
 
-    // Validate email authorization against Git Secret list
+    // Validate email authorization against AUTHORIZED_EMAIL_IDS list
     const authCheck = checkEmailAuthorization(user.email, user.domain);
-    if (!authCheck.isAuthorized && user.isDomainAllowed !== true) {
+    if (!authCheck.isAuthorized) {
       user.isDomainAllowed = false;
-      renderRequestAccessState(user);
-      return;
-    }
-
-    if (user.isDomainAllowed === false) {
       renderRequestAccessState(user);
       return;
     }
@@ -672,8 +747,8 @@ function renderRequestAccessState(user) {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
         </svg>
       </div>
-      <h2>Access Restricted: Not Authorized</h2>
-      <p style="margin-bottom:0.75rem;">You are signed in as <strong>${escapeHtml(email)}</strong>, but this account is not in the authorized users list.</p>
+      <h2>Unauthorized Access — Access Restricted</h2>
+      <p style="margin-bottom:0.75rem;">You are signed in as <strong>${escapeHtml(email)}</strong>, which is not in the authorized email IDs list (<code>AUTHORIZED_EMAIL_IDS</code>).</p>
 
       <div class="user-pill-highlight" style="border-color:#fca5a5; background:#fff1f2;">
         <span class="user-pill-dot" style="background:#ef4444; box-shadow:0 0 0 2px rgba(239,68,68,0.25);"></span>
@@ -682,7 +757,7 @@ function renderRequestAccessState(user) {
 
       <div class="access-info-box" style="margin-top:0.75rem; text-align:left; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:0.75rem 1rem; font-size:0.85rem; color:#475569;">
         <div style="font-weight:600; color:#1e293b; margin-bottom:0.25rem;">Authorization Required</div>
-        Access to this application is restricted to pre-approved Google accounts specified in the administrator's authorized users list (Git Secrets). You may submit a request below or switch to an authorized Google account.
+        Access to this application is restricted to pre-approved Google accounts configured in the repository's <code>AUTHORIZED_EMAIL_IDS</code> variable. Please switch to an authorized Google account or request access below.
       </div>
 
       <div class="access-form-wrapper" style="width:100%; margin-top:0.75rem; text-align:left;">

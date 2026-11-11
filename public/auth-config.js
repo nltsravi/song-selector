@@ -5,6 +5,7 @@
  */
 window.AUTH_CONFIG = {
   "GOOGLE_CLIENT_ID": "",
+  "AUTHORIZED_EMAIL_IDS": "ravijshankar@gmail.com, ravi@neolumina.in, sarah@tirwin.in",
   "AUTHORIZED_EMAILS": [
     "ravijshankar@gmail.com",
     "ravi@neolumina.in",
@@ -14,5 +15,5 @@ window.AUTH_CONFIG = {
     "tirwin.in"
   ],
   "REQUIRE_AUTHORIZATION": true,
-  "GENERATED_AT": "2026-11-11T08:42:55.659Z"
+  "GENERATED_AT": "2026-11-11T08:54:56.767Z"
 };

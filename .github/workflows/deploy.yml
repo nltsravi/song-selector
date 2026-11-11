@@ -26,11 +26,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Build Auth Config from Git Secrets
+      - name: Build Auth Config from Git Variables & Secrets
         env:
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          AUTHORIZED_USERS: ${{ secrets.AUTHORIZED_USERS || secrets.AUTHORIZED_EMAILS }}
-          ALLOWED_DOMAIN: ${{ secrets.ALLOWED_DOMAIN }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
+          AUTHORIZED_EMAIL_IDS: ${{ vars.AUTHORIZED_EMAIL_IDS || secrets.AUTHORIZED_EMAIL_IDS || vars.AUTHORIZED_USERS || secrets.AUTHORIZED_USERS || secrets.AUTHORIZED_EMAILS }}
+          ALLOWED_DOMAIN: ${{ vars.ALLOWED_DOMAIN || secrets.ALLOWED_DOMAIN }}
         run: |
           node scripts/build-auth-config.js
 
