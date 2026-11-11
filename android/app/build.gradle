@@ -1,6 +1,8 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.github.triplet.play'
 
+import com.github.triplet.gradle.androidpublisher.ReleaseStatus
+
 def keystorePropsFile = rootProject.file("keystore.properties")
 def keystoreProps = new Properties()
 if (keystorePropsFile.exists()) {
@@ -60,7 +62,12 @@ android {
 
 play {
     serviceAccountCredentials.set(file(System.getenv("PLAY_SERVICE_ACCOUNT_JSON") ?: "play-service-account.json"))
-    track.set("production")
+    track.set(System.getenv("PLAY_TRACK") ?: "production")
+    releaseStatus.set(
+        (System.getenv("PLAY_RELEASE_STATUS") ?: "draft").equalsIgnoreCase("completed")
+            ? ReleaseStatus.COMPLETED
+            : ReleaseStatus.DRAFT
+    )
     defaultToAppBundles.set(true)
 }
 
