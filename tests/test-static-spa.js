@@ -193,15 +193,18 @@ console.log('✓ Header nav, Footer legal links, Drive notice & Neolumina Techno
 // 7. Cache-Busting, Network-First Service Worker & Safe Unicode Base64 Export
 console.log('\nTest 7: Cache-Control Meta, Network-First SW & Safe Base64 Unicode Export');
 
-// Check Cache-Control meta tags across all HTML files
+// Check Cache-Control meta tags and bottom-right build number (yyyymmddhhmmssms) across all HTML files
 const htmlFiles = ['index.html', '404.html', 'about.html', 'contact.html', 'terms.html', 'privacy.html'];
 htmlFiles.forEach((file) => {
   const content = fs.readFileSync(path.join(__dirname, '../public', file), 'utf8');
   assert(content.includes('http-equiv="Cache-Control"') && content.includes('no-cache'), `${file} must include Cache-Control no-cache meta tag`);
   assert(content.includes('http-equiv="Pragma"'), `${file} must include Pragma no-cache meta tag`);
   assert(content.includes('http-equiv="Expires"'), `${file} must include Expires 0 meta tag`);
+  const buildMatch = content.match(/<div class="footer-build-number" id="app-build-number">(\d{17})<\/div>/);
+  assert(buildMatch && /^\d{17}$/.test(buildMatch[1]), `${file} must display 17-digit yyyymmddhhmmssms build number in footer-build-number`);
 });
-console.log('✓ All HTML files configured with Cache-Control no-cache meta tags');
+assert(stylesCss.includes('.footer-build-number') && stylesCss.includes('right:'), 'styles.css must position .footer-build-number at bottom right');
+console.log('✓ All HTML files configured with Cache-Control no-cache meta tags and yyyymmddhhmmssms build number');
 
 // Verify sw.js has network-first strategy
 assert(swCode.includes('CACHE_NAME = \'song-selector-v2\''), 'sw.js must use CACHE_NAME song-selector-v2');

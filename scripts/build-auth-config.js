@@ -77,13 +77,26 @@ function main() {
       .filter(d => d.length > 0)
   ));
 
+  const now = new Date();
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const pad3 = (n) => String(n).padStart(3, '0');
+  const buildNumber =
+    String(now.getFullYear()) +
+    pad2(now.getMonth() + 1) +
+    pad2(now.getDate()) +
+    pad2(now.getHours()) +
+    pad2(now.getMinutes()) +
+    pad2(now.getSeconds()) +
+    pad3(now.getMilliseconds());
+
   const authConfig = {
     GOOGLE_CLIENT_ID: googleClientId,
     AUTHORIZED_EMAIL_IDS: authorizedEmails.join(', '),
     AUTHORIZED_EMAILS: authorizedEmails,
     ALLOWED_DOMAINS: allowedDomains,
     REQUIRE_AUTHORIZATION: true,
-    GENERATED_AT: new Date().toISOString()
+    BUILD_NUMBER: buildNumber,
+    GENERATED_AT: now.toISOString()
   };
 
   const jsContent = `/**
@@ -102,6 +115,23 @@ window.AUTH_CONFIG = ${JSON.stringify(authConfig, null, 2)};
   fs.writeFileSync(publicJsonPath, JSON.stringify(authConfig, null, 2), 'utf8');
   console.log(`Wrote ${publicJsonPath}`);
 
+  // Update footer build number in all public HTML files
+  const htmlFiles = ['index.html', '404.html', 'about.html', 'contact.html', 'terms.html', 'privacy.html'];
+  htmlFiles.forEach((file) => {
+    const filePath = path.join(__dirname, '../public', file);
+    if (fs.existsSync(filePath)) {
+      const html = fs.readFileSync(filePath, 'utf8');
+      const updated = html.replace(
+        /<div class="footer-build-number" id="app-build-number">[^<]*<\/div>/g,
+        `<div class="footer-build-number" id="app-build-number">${buildNumber}</div>`
+      );
+      if (updated !== html) {
+        fs.writeFileSync(filePath, updated, 'utf8');
+      }
+    }
+  });
+
+  console.log('Build Number (yyyymmddhhmmssms):', buildNumber);
   console.log('Authorized Users Count:', authorizedEmails.length);
   console.log('Authorized Emails:', authorizedEmails.join(', '));
   console.log('Allowed Domains:', allowedDomains.join(', '));

@@ -2650,6 +2650,17 @@ h1, h2, h3, h4, .font-heading {
   color: var(--text-muted);
 }
 
+.footer-build-number {
+  position: absolute;
+  right: 0.75rem;
+  bottom: calc(0.2rem + env(safe-area-inset-bottom, 0px));
+  font-size: 0.6rem;
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
 @media (max-width: 640px) {
   .app-footer {
     padding: 0.35rem 0.5rem calc(0.35rem + env(safe-area-inset-bottom, 0px)) !important;
@@ -2660,6 +2671,11 @@ h1, h2, h3, h4, .font-heading {
   }
   .footer-copyright {
     font-size: 0.675rem !important;
+  }
+  .footer-build-number {
+    font-size: 0.5rem !important;
+    right: 0.35rem !important;
+    bottom: calc(0.12rem + env(safe-area-inset-bottom, 0px)) !important;
   }
   .header-right-area {
     width: auto;
