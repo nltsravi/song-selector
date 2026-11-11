@@ -519,6 +519,17 @@ function triggerGoogleOAuthPopup(clientId) {
  * Development Mode Email Authentication Prompt
  */
 function promptDevGoogleLogin() {
+  if (window.NativeMobileBridge && typeof window.NativeMobileBridge.openMobileGoogleSignInModal === 'function') {
+    window.NativeMobileBridge.openMobileGoogleSignInModal((cleanEmail) => {
+      handleGoogleUserProfile({
+        email: cleanEmail,
+        name: cleanEmail.split('@')[0],
+        hd: cleanEmail.split('@')[1]
+      });
+    });
+    return;
+  }
+
   const emailInput = window.prompt('Enter your Google account email to sign in:');
 
   if (emailInput && emailInput.trim()) {
@@ -2111,6 +2122,10 @@ async function generateAndDownloadPdf(result) {
 
     // Build standard PDF-1.4 binary with /DCTDecode JPEG page streams
     const pdfBytes = buildPdfFromJpegPages(pageJpegs);
+    if (window.NativeMobileBridge && window.NativeMobileBridge.isNativeApp()) {
+      const shared = await window.NativeMobileBridge.saveAndShareFile(pdfBytes, result.filename, 'application/pdf');
+      if (shared) return;
+    }
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -2246,6 +2261,10 @@ function buildPdfFromJpegPages(jpegPages) {
  */
 function downloadExportBlob(base64Data, filename, mimeType) {
   try {
+    if (window.NativeMobileBridge && window.NativeMobileBridge.isNativeApp()) {
+      window.NativeMobileBridge.saveAndShareFile(base64Data, filename, mimeType);
+      return;
+    }
     const byteCharacters = atob(base64Data);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
