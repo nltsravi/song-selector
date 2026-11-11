@@ -35,35 +35,37 @@
   <div class="app-container">
     <!-- Main Application Header (Section 3) -->
     <header class="app-header" role="banner">
-      <div class="header-brand">
-        <a href="index.html" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 1rem;">
-          <div class="brand-icon" aria-hidden="true">
-            <img src="images/omkaarssl-logo-transperent-black.png" alt="OmkaarSSL Logo" class="brand-logo-img">
-          </div>
-          <div class="brand-text">
-            <h1>Song Collection &amp; Lyrics Library</h1>
-            <p>Search songs, create collections, add tags, and export lyrics.</p>
-          </div>
-        </a>
-      </div>
+      <div class="header-inner">
+        <div class="header-brand">
+          <a href="index.html" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 1rem;">
+            <div class="brand-icon" aria-hidden="true">
+              <img src="images/omkaarssl-logo-transperent-black.png" alt="OmkaarSSL Logo" class="brand-logo-img">
+            </div>
+            <div class="brand-text">
+              <h1>Song Collection &amp; Lyrics Library</h1>
+              <p>Search songs, create collections, add tags, and export lyrics.</p>
+            </div>
+          </a>
+        </div>
 
-      <!-- Header Right Section: Nav & Auth -->
-      <div class="header-right-area">
-        <!-- Navigation Links in Header -->
-        <nav class="header-nav" aria-label="Main Navigation">
-          <a href="index.html" class="header-nav-link active" id="nav-library-link">Library</a>
-          <a href="about.html" class="header-nav-link" id="nav-about-link">About Us</a>
-          <a href="contact.html" class="header-nav-link" id="nav-contact-link">Contact Us</a>
-        </nav>
+        <!-- Header Right Section: Nav & Auth -->
+        <div class="header-right-area">
+          <!-- Navigation Links in Header -->
+          <nav class="header-nav" aria-label="Main Navigation">
+            <a href="index.html" class="header-nav-link active" id="nav-library-link">Library</a>
+            <a href="about.html" class="header-nav-link" id="nav-about-link">About Us</a>
+            <a href="contact.html" class="header-nav-link" id="nav-contact-link">Contact Us</a>
+          </nav>
 
-        <!-- Authenticated User Badge (Section 5) -->
-        <div class="user-badge" id="user-badge" style="display: none;" aria-label="Authenticated user status">
-          <div class="user-avatar" id="user-avatar" aria-hidden="true">U</div>
-          <span class="user-email-text" id="user-email-text">user@example.com</span>
-          <span class="user-status-pill" id="user-status-pill">Authorized</span>
-          <button type="button" class="btn-signout" id="btn-signout" onclick="window.googleSignOut()" title="Sign Out of Google" aria-label="Sign Out">
-            <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-          </button>
+          <!-- Authenticated User Badge (Section 5) -->
+          <div class="user-badge" id="user-badge" style="display: none;" aria-label="Authenticated user status">
+            <div class="user-avatar" id="user-avatar" aria-hidden="true">U</div>
+            <span class="user-email-text" id="user-email-text">user@example.com</span>
+            <span class="user-status-pill" id="user-status-pill">Authorized</span>
+            <button type="button" class="btn-signout" id="btn-signout" onclick="window.googleSignOut()" title="Sign Out of Google" aria-label="Sign Out">
+              <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            </button>
+          </div>
         </div>
       </div>
     </header>

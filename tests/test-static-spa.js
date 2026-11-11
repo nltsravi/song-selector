@@ -145,6 +145,10 @@ assert(contactContent.includes('NeoLumina. All rights reserved.'), 'contact.html
   assert(pageHtml.includes('class="header-nav"'), `Page ${i} must include header-nav`);
 });
 
+// Verify Fixed Header and Footer Architecture
+assert(stylesCss.includes('position: fixed') && stylesCss.includes('--header-height'), 'CSS must define fixed header positioning and dimension');
+assert(stylesCss.includes('position: fixed') && stylesCss.includes('--footer-height'), 'CSS must define fixed footer positioning and dimension');
+
 // Verify Removal of User Switching Dropdown & Secret Emails Alert
 assert(!indexHtml.includes('id="sim-bar"'), 'index.html must not contain user switching sim-bar');
 assert(!indexHtml.includes('id="sim-user-select"'), 'index.html must not contain sim-user-select dropdown');
