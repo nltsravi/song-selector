@@ -830,6 +830,9 @@
         filename: filename,
         mimeType: mimeType,
         base64Data: base64Data,
+        driveUrl: 'https://drive.google.com/drive/u/0/my-drive',
+        userEmail: activeSimulatedUser ? activeSimulatedUser.email : 'user@example.com',
+        savedToDrive: true,
         songCount: songsToExport.length,
         language: lang,
         format: fmt

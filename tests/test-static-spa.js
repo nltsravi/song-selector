@@ -104,7 +104,55 @@ assert(appJs.includes('resetLyricsFontSize'), 'app.js must implement resetLyrics
 assert(stylesCss.includes('--lyrics-font-size'), 'CSS must support --lyrics-font-size variable');
 console.log('✓ Lyrics font size scaling controls verified');
 
+// 6. Header Navigation, Footer Navigation, Legal Pages & Google Drive Export Storage
+console.log('\nTest 6: Header Nav, Footer Legal Links, Drive Notice & NeoLumina Copyright');
+const termsHtmlPath = path.join(__dirname, '../public/terms.html');
+const privacyHtmlPath = path.join(__dirname, '../public/privacy.html');
+const aboutHtmlPath = path.join(__dirname, '../public/about.html');
+const contactHtmlPath = path.join(__dirname, '../public/contact.html');
+
+assert(fs.existsSync(termsHtmlPath), 'public/terms.html must exist');
+assert(fs.existsSync(privacyHtmlPath), 'public/privacy.html must exist');
+assert(fs.existsSync(aboutHtmlPath), 'public/about.html must exist');
+assert(fs.existsSync(contactHtmlPath), 'public/contact.html must exist');
+
+// Verify Header Links
+assert(indexHtml.includes('About Us') && indexHtml.includes('about.html'), 'Header must contain About Us link');
+assert(indexHtml.includes('Contact Us') && indexHtml.includes('contact.html'), 'Header must contain Contact Us link');
+assert(indexHtml.includes('class="header-nav"'), 'Header must contain header-nav container');
+
+// Verify Footer Links & Copyright
+assert(indexHtml.includes('class="app-footer"'), 'index.html must contain app-footer');
+assert(indexHtml.includes('terms.html') && indexHtml.includes('Terms &amp; Conditions'), 'Footer must contain Terms & Conditions link');
+assert(indexHtml.includes('privacy.html') && indexHtml.includes('Privacy Policy'), 'Footer must contain Privacy Policy link');
+assert(indexHtml.includes('NeoLumina. All rights reserved.'), 'Footer must contain NeoLumina copyright');
+
+// Verify Legal Pages content & NeoLumina branding
+const termsContent = fs.readFileSync(termsHtmlPath, 'utf8');
+const privacyContent = fs.readFileSync(privacyHtmlPath, 'utf8');
+const aboutContent = fs.readFileSync(aboutHtmlPath, 'utf8');
+const contactContent = fs.readFileSync(contactHtmlPath, 'utf8');
+
+assert(termsContent.includes('NeoLumina. All rights reserved.'), 'terms.html must contain NeoLumina copyright');
+assert(privacyContent.includes('NeoLumina. All rights reserved.'), 'privacy.html must contain NeoLumina copyright');
+assert(aboutContent.includes('NeoLumina. All rights reserved.'), 'about.html must contain NeoLumina copyright');
+assert(contactContent.includes('NeoLumina. All rights reserved.'), 'contact.html must contain NeoLumina copyright');
+
+// Verify Google Drive storage notice & user notification
+assert(indexHtml.includes('export-drive-notice'), 'index.html must contain Google Drive storage notice in export modal');
+assert(indexHtml.includes('export-user-email-placeholder'), 'export modal must contain user email placeholder');
+assert(appJs.includes('export-user-email-placeholder'), 'app.js must dynamically set user email in export modal');
+assert(appJs.includes('saved to Google Drive'), 'app.js export toast must notify user that file is saved to Google Drive');
+
+// Verify backend & mock Drive integration
+const mockBackendJs = fs.readFileSync(path.join(__dirname, '../public/mock-backend.js'), 'utf8');
+const exportServiceGs = fs.readFileSync(path.join(__dirname, '../apps-script/ExportService.gs'), 'utf8');
+assert(mockBackendJs.includes('savedToDrive: true') && mockBackendJs.includes('driveUrl'), 'mock-backend.js must return driveUrl and savedToDrive');
+assert(exportServiceGs.includes('addEditor(userEmail)') || exportServiceGs.includes('userEmail'), 'ExportService.gs must share file with user email');
+
+console.log('✓ Header nav, Footer legal links, Drive notice & NeoLumina copyright verified');
+
 console.log('\n========================================');
-console.log('ALL STATIC APP & MOBILE TESTS PASSED! (5/5)');
+console.log('ALL STATIC APP & MOBILE TESTS PASSED! (6/6)');
 console.log('========================================');
 

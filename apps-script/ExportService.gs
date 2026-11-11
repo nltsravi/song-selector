@@ -505,6 +505,19 @@ var ExportService = {
       // Save a file copy in dedicated export folder for auditing/archiving
       var savedExportFile = exportFolder.createFile(exportBlob);
 
+      // Ensure file is shared and accessible in the logged-in user's Google Drive
+      if (userEmail && userEmail.indexOf('@') !== -1) {
+        try {
+          savedExportFile.addEditor(userEmail);
+        } catch (shareErr) {
+          try {
+            savedExportFile.addViewer(userEmail);
+          } catch (viewErr) {
+            Logger.log('Could not grant drive access to user email: ' + viewErr);
+          }
+        }
+      }
+
       // Record export in ExportHistory sheet (Section 29)
       this.recordExportHistory(exportId, collectionId, userEmail, validLang, validFormat, songsToExport.length);
 
@@ -518,6 +531,9 @@ var ExportService = {
         mimeType: mimeType,
         base64Data: base64Data,
         downloadUrl: savedExportFile.getUrl(),
+        driveUrl: savedExportFile.getUrl(),
+        userEmail: userEmail,
+        savedToDrive: true,
         songCount: songsToExport.length,
         language: validLang,
         format: validFormat
