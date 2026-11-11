@@ -451,12 +451,7 @@ function triggerGoogleOAuthPopup(clientId) {
  * Development Mode Email Authentication Prompt
  */
 function promptDevGoogleLogin() {
-  const config = window.AUTH_CONFIG || {};
-  const sampleAuth = (config.AUTHORIZED_EMAILS && config.AUTHORIZED_EMAILS.length > 0) ? config.AUTHORIZED_EMAILS[0] : 'ravi@neolumina.in';
-  const emailInput = window.prompt(
-    'Enter your Google account email to sign in:\n\n(Tip: Authorized in Git Secrets: ' + (config.AUTHORIZED_EMAILS || []).join(', ') + ')',
-    sampleAuth
-  );
+  const emailInput = window.prompt('Enter your Google account email to sign in:');
 
   if (emailInput && emailInput.trim()) {
     const cleanEmail = emailInput.trim().toLowerCase();

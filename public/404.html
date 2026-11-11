@@ -20,63 +20,11 @@
 
   <!-- Google Identity Services (GIS) for Google OAuth 2.0 -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  
-  <style>
-    /* Simulation Bar for Testing Authentication Scenarios */
-    .sim-bar {
-      background: #f1f5f9;
-      border-bottom: 1px solid #cbd5e1;
-      padding: 0.45rem 1rem;
-      font-size: 0.8rem;
-      color: #334155;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      z-index: 9999;
-      position: relative;
-    }
-    .sim-controls {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .sim-select {
-      background: #ffffff;
-      color: #0f172a;
-      border: 1px solid #cbd5e1;
-      border-radius: 4px;
-      padding: 0.2rem 0.5rem;
-      font-size: 0.75rem;
-      outline: none;
-    }
-  </style>
 
   <!-- Load Styles from apps-script/styles.html content -->
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Simulation Bar for Testing Auth & Domain Requirements (Section 4, 6) -->
-  <div class="sim-bar" id="sim-bar">
-    <div style="display:flex; align-items:center; gap:0.5rem;">
-      <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981;"></span>
-      <strong>Google Auth Simulator:</strong>
-      <span>Simulate user login state for verification</span>
-    </div>
-    <div class="sim-controls">
-      <label for="sim-user-select" style="font-size:0.75rem;">Auth Mode:</label>
-      <select id="sim-user-select" class="sim-select" onchange="window.MockBackend.setSimulatedUser(this.value)">
-        <option value="logged_in_gmail">Logged In (user@example.com)</option>
-        <option value="logged_in_tirwin">Workspace Domain (sarah@tirwin.in)</option>
-        <option value="gmail_unauthorized">Gmail Logged In (johndoe@gmail.com - Request Access)</option>
-        <option value="gmail_pending">Gmail Pending Approval (johndoe@gmail.com)</option>
-        <option value="unauthorized_domain">Unauthorized Domain (outsider@otherdomain.com)</option>
-        <option value="unauthenticated">Unauthenticated (Sign-in Required)</option>
-      </select>
-    </div>
-  </div>
-
   <!-- Ambient background glow effects -->
   <div class="gradient-ambient"></div>
   <div class="gradient-ambient-2"></div>
@@ -88,19 +36,22 @@
     <!-- Main Application Header (Section 3) -->
     <header class="app-header" role="banner">
       <div class="header-brand">
-        <div class="brand-icon" aria-hidden="true">
-          <img src="images/omkaarssl-logo-transperent-black.png" alt="OmkaarSSL Logo" class="brand-logo-img">
-        </div>
-        <div class="brand-text">
-          <h1>Song Collection & Lyrics Library</h1>
-          <p>Search songs, create collections, add tags, and export lyrics.</p>
-        </div>
+        <a href="index.html" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 1rem;">
+          <div class="brand-icon" aria-hidden="true">
+            <img src="images/omkaarssl-logo-transperent-black.png" alt="OmkaarSSL Logo" class="brand-logo-img">
+          </div>
+          <div class="brand-text">
+            <h1>Song Collection &amp; Lyrics Library</h1>
+            <p>Search songs, create collections, add tags, and export lyrics.</p>
+          </div>
+        </a>
       </div>
 
       <!-- Header Right Section: Nav & Auth -->
       <div class="header-right-area">
         <!-- Navigation Links in Header -->
         <nav class="header-nav" aria-label="Main Navigation">
+          <a href="index.html" class="header-nav-link active" id="nav-library-link">Library</a>
           <a href="about.html" class="header-nav-link" id="nav-about-link">About Us</a>
           <a href="contact.html" class="header-nav-link" id="nav-contact-link">Contact Us</a>
         </nav>
@@ -577,18 +528,6 @@
         navigator.serviceWorker.register('sw.js').catch((e) => console.log('SW registration note:', e));
       });
     }
-
-    // Sync dropdown with active simulated user
-    document.addEventListener('DOMContentLoaded', () => {
-      const simSelect = document.getElementById('sim-user-select');
-      if (simSelect && window.MockBackend) {
-        const u = window.MockBackend.getSimulatedUser();
-        if (!u.isAuthenticated) simSelect.value = 'unauthenticated';
-        else if (u.isDomainAllowed === false) simSelect.value = 'unauthorized_domain';
-        else if (u.domain === 'tirwin.in') simSelect.value = 'logged_in_tirwin';
-        else simSelect.value = 'logged_in_gmail';
-      }
-    });
   </script>
 </body>
 </html>

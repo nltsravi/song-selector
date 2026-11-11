@@ -138,6 +138,18 @@ assert(privacyContent.includes('NeoLumina. All rights reserved.'), 'privacy.html
 assert(aboutContent.includes('NeoLumina. All rights reserved.'), 'about.html must contain NeoLumina copyright');
 assert(contactContent.includes('NeoLumina. All rights reserved.'), 'contact.html must contain NeoLumina copyright');
 
+// Verify Header & Footer Display Across All Application Pages
+[termsContent, privacyContent, aboutContent, contactContent].forEach((pageHtml, i) => {
+  assert(pageHtml.includes('class="app-header"'), `Page ${i} must include app-header`);
+  assert(pageHtml.includes('class="app-footer"'), `Page ${i} must include app-footer`);
+  assert(pageHtml.includes('class="header-nav"'), `Page ${i} must include header-nav`);
+});
+
+// Verify Removal of User Switching Dropdown & Secret Emails Alert
+assert(!indexHtml.includes('id="sim-bar"'), 'index.html must not contain user switching sim-bar');
+assert(!indexHtml.includes('id="sim-user-select"'), 'index.html must not contain sim-user-select dropdown');
+assert(!appJs.includes('Tip: Authorized in Git Secrets'), 'app.js must not display eligible email IDs in alert/prompt');
+
 // Verify Google Drive storage notice & user notification
 assert(indexHtml.includes('export-drive-notice'), 'index.html must contain Google Drive storage notice in export modal');
 assert(indexHtml.includes('export-user-email-placeholder'), 'export modal must contain user email placeholder');
