@@ -1,12 +1,20 @@
 /**
  * Service Worker for Offline Song Collection & Lyrics Library
- * Enables complete offline capability on Android, iOS, and Web.
+ * Network-First Strategy:
+ * Always fetches the freshest content from the network when online,
+ * updating the local offline cache.
+ * Falls back to cache only when offline or network fails.
  */
 
-const CACHE_NAME = 'song-selector-v1';
+const CACHE_NAME = 'song-selector-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
+  './404.html',
+  './about.html',
+  './contact.html',
+  './terms.html',
+  './privacy.html',
   './styles.css',
   './app.js',
   './mock-backend.js',
@@ -45,35 +53,29 @@ self.addEventListener('fetch', (event) => {
   // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
+  // Network-First: Always attempt to fetch from network first so updates are delivered immediately
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Return cached response and update cache in background (stale-while-revalidate)
-        fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, networkResponse);
-            });
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        // Network unavailable or offline: Fallback to cache
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
           }
-        }).catch(() => {/* Offline */});
-        return cachedResponse;
-      }
-      return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
+          // Fallback for HTML documents when offline
+          if (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) {
+            return caches.match('./index.html');
+          }
         });
-        return response;
-      }).catch(() => {
-        // Fallback for HTML documents when offline
-        if (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) {
-          return caches.match('./index.html');
-        }
-      });
-    })
+      })
   );
 });
-
