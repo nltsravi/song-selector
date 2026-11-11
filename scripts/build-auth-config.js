@@ -106,3 +106,4 @@ window.AUTH_CONFIG = ${JSON.stringify(authConfig, null, 2)};
 }
 
 main();
+

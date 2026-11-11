@@ -1,4 +1,4 @@
-name: Build & Deploy Static Song Selector SPA
+name: Build & Deploy Static Song Selector SPA to GitHub Pages
 
 on:
   push:
@@ -6,9 +6,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -34,6 +38,13 @@ jobs:
         run: |
           npm test
 
+      - name: Deploy to gh-pages Branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: public
+          branch: gh-pages
+          clean: true
+
       - name: Upload Static Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -41,7 +52,7 @@ jobs:
 
   deploy:
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/song-selector-spa'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
