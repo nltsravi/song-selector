@@ -1661,6 +1661,13 @@ window.openExportModal = async function(collectionId) {
   const collName = collection ? collection.name : 'Collection';
   document.getElementById('export-modal-collection-name').textContent = collName;
 
+  // Inform user about Google Drive storage target
+  const userEmail = (state.currentUser && state.currentUser.email) ? state.currentUser.email : 'your Google account';
+  const emailPlaceholder = document.getElementById('export-user-email-placeholder');
+  if (emailPlaceholder) {
+    emailPlaceholder.textContent = userEmail;
+  }
+
   // Set default selection
   setExportLanguage('Tamil');
   setExportFormat('PDF');
@@ -1772,7 +1779,9 @@ window.executeExport = async function() {
     // Trigger direct browser download of base64 blob
     downloadExportBlob(result.base64Data, result.filename, result.mimeType);
 
-    showToast(`✓ ${result.format} generated successfully.`);
+    const userEmail = (state.currentUser && state.currentUser.email) ? state.currentUser.email : '';
+    const driveNote = userEmail ? ` and saved to Google Drive for ${userEmail}` : ' and saved to Google Drive';
+    showToast(`✓ ${result.format} generated${driveNote}.`);
     closeModal('modal-export');
 
     // Refresh collection export metadata
