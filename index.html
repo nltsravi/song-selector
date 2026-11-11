@@ -18,6 +18,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 
+  <!-- Google Identity Services (GIS) for Google OAuth 2.0 -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  
   <style>
     /* Simulation Bar for Testing Authentication Scenarios */
     .sim-bar {
@@ -98,7 +101,10 @@
       <div class="user-badge" id="user-badge" style="display: none;" aria-label="Authenticated user status">
         <div class="user-avatar" id="user-avatar" aria-hidden="true">U</div>
         <span class="user-email-text" id="user-email-text">user@example.com</span>
-        <span class="user-status-pill" id="user-status-pill">Verified</span>
+        <span class="user-status-pill" id="user-status-pill">Authorized</span>
+        <button type="button" class="btn-signout" id="btn-signout" onclick="window.googleSignOut()" title="Sign Out of Google" aria-label="Sign Out">
+          <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        </button>
       </div>
     </header>
 
@@ -113,7 +119,9 @@
         <h2>Sign in required</h2>
         <p id="auth-error-message">Please sign in with your Google account to access the Song Collection & Lyrics Library.</p>
         
-        <button type="button" class="btn-google-signin" id="btn-google-login" onclick="window.MockBackend.setSimulatedUser('logged_in_gmail')">
+        <div id="google-signin-btn-container" style="display:flex; justify-content:center; margin: 0.75rem 0;"></div>
+
+        <button type="button" class="btn-google-signin" id="btn-google-login" onclick="window.initiateGoogleSignIn()">
           <!-- Google G Logo -->
           <svg style="width:18px;height:18px;" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -521,6 +529,7 @@
   <!-- Load Mock Backend & Client Logic -->
   <script src="logo-data.js"></script>
   <script src="songs-data.js"></script>
+  <script src="auth-config.js"></script>
   <script src="mock-backend.js"></script>
   <script src="app.js"></script>
 

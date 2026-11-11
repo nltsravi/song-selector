@@ -1,0 +1,13 @@
+{
+  "GOOGLE_CLIENT_ID": "",
+  "AUTHORIZED_EMAILS": [
+    "ravijshankar@gmail.com",
+    "ravi@neolumina.in",
+    "sarah@tirwin.in"
+  ],
+  "ALLOWED_DOMAINS": [
+    "tirwin.in"
+  ],
+  "REQUIRE_AUTHORIZATION": true,
+  "GENERATED_AT": "2026-11-11T04:24:54.232Z"
+}
