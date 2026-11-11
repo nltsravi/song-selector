@@ -228,8 +228,8 @@ assert(setupSheetCode.includes("'Video URL'"), 'SetupSheet must include Video UR
 
 // Verify index.html favicon & logo
 const publicIndex = fs.readFileSync('public/index.html', 'utf8');
-assert(publicIndex.includes('omkaarssl-logo-transperent-black.png'), 'public/index.html must reference omkaarssl-logo-transperent-black.png');
-assert(publicIndex.includes('rel="icon"'), 'public/index.html must define favicon');
+assert(publicIndex.includes('images/app-logo.png'), 'public/index.html must reference images/app-logo.png');
+assert(publicIndex.includes('favicon.ico') && publicIndex.includes('images/favicon-32x32.png'), 'public/index.html must define favicon.ico and PNG favicons');
 
 const appsScriptIndex = fs.readFileSync('apps-script/index.html', 'utf8');
 assert(appsScriptIndex.includes('rel="icon"'), 'apps-script/index.html must define favicon');
@@ -240,7 +240,7 @@ const appJsCode = fs.readFileSync('public/app.js', 'utf8');
 assert(appJsCode.includes('song-card-image-wrap'), 'app.js must render image wrap on top');
 assert(appJsCode.includes('media-btn audio-btn'), 'app.js must render audio button');
 assert(appJsCode.includes('media-btn video-btn'), 'app.js must render video button');
-assert(appJsCode.includes('omkaarssl-logo-transperent-black.png'), 'app.js must use omkaarssl logo as default fallback image');
+assert(appJsCode.includes('images/app-logo.png'), 'app.js must use images/app-logo.png as default fallback image');
 
 const jsHtmlCode = fs.readFileSync('apps-script/javascript.html', 'utf8');
 assert(jsHtmlCode.includes('song-card-image-wrap'), 'javascript.html must render image wrap on top');

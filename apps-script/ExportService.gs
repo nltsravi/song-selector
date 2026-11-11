@@ -23,14 +23,14 @@ var ExportService = {
     try {
       if (typeof LOGO_HEADER_BASE64 !== 'undefined' && LOGO_HEADER_BASE64) {
         var bytes = Utilities.base64Decode(LOGO_HEADER_BASE64);
-        return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-logo-header.png');
+        return Utilities.newBlob(bytes, 'image/png', 'app-logo-header.png');
       } else if (typeof LOGO_IMAGE_50_BASE64 !== 'undefined' && LOGO_IMAGE_50_BASE64) {
         var bytes = Utilities.base64Decode(LOGO_IMAGE_50_BASE64);
-        return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-logo-header.png');
+        return Utilities.newBlob(bytes, 'image/png', 'app-logo-header.png');
       } else if (typeof LOGO_IMAGE_BASE64 !== 'undefined' && LOGO_IMAGE_BASE64) {
         var bytes = Utilities.base64Decode(LOGO_IMAGE_BASE64);
         var mime = (typeof LOGO_IMAGE_MIME !== 'undefined' && LOGO_IMAGE_MIME) ? LOGO_IMAGE_MIME : 'image/png';
-        return Utilities.newBlob(bytes, mime, 'omkaarssl-logo-header.png');
+        return Utilities.newBlob(bytes, mime, 'app-logo-header.png');
       }
     } catch (e) {
       Logger.log('Could not decode logo blob: ' + e);
@@ -45,10 +45,10 @@ var ExportService = {
     try {
       if (typeof LOGO_IMAGE_WATERMARK_BASE64 !== 'undefined' && LOGO_IMAGE_WATERMARK_BASE64) {
         var bytes = Utilities.base64Decode(LOGO_IMAGE_WATERMARK_BASE64);
-        return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-watermark.png');
+        return Utilities.newBlob(bytes, 'image/png', 'app-logo-watermark.png');
       } else if (typeof LOGO_IMAGE_BASE64 !== 'undefined' && LOGO_IMAGE_BASE64) {
         var bytes = Utilities.base64Decode(LOGO_IMAGE_BASE64);
-        return Utilities.newBlob(bytes, 'image/png', 'omkaarssl-watermark.png');
+        return Utilities.newBlob(bytes, 'image/png', 'app-logo-watermark.png');
       }
     } catch (e) {
       Logger.log('Could not decode watermark blob: ' + e);

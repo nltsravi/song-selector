@@ -98,7 +98,48 @@ assert(workflowYaml.includes('npx cap copy'), 'deploy.yml must sync web assets t
 
 console.log('✓ Native Mobile Bridge, File Export/Share Sheet, Back Button, Mobile OAuth & CI Build Pipeline verified');
 
+// 5. Verify Brand Icons, Favicons, Splash Screens & Store Upload Artifacts (No Legacy OmkaarSSL Icons)
+console.log('\nTest 5: Brand Icons, Favicons, Splash Screens & Play Store / App Store Artifacts');
+const publicImagesDir = path.join(__dirname, '../public/images');
+const legacyOmkaarFiles = fs.readdirSync(publicImagesDir).filter(f => f.toLowerCase().includes('omkaar'));
+assert.strictEqual(legacyOmkaarFiles.length, 0, 'No legacy omkaarssl image files may remain in public/images/');
+
+const requiredWebAssets = [
+  'public/favicon.ico',
+  'public/images/favicon-16x16.png',
+  'public/images/favicon-32x32.png',
+  'public/images/apple-touch-icon.png',
+  'public/images/app-logo.png',
+  'public/images/app-logo-header.png',
+  'public/images/app-logo-watermark-7.png',
+  'public/images/icon-192x192.png',
+  'public/images/icon-512x512.png'
+];
+requiredWebAssets.forEach(relPath => {
+  assert(fs.existsSync(path.join(__dirname, '..', relPath)), `Required web icon/asset missing: ${relPath}`);
+});
+
+const requiredStoreArtifacts = [
+  'store-artifacts/google-play-store/SongSelector-release.aab',
+  'store-artifacts/google-play-store/SongSelector-debug.apk',
+  'store-artifacts/google-play-store/play-store-icon-512x512.png',
+  'store-artifacts/google-play-store/feature-graphic-1024x500.png',
+  'store-artifacts/google-play-store/phone-screenshot-1-1080x1920.png',
+  'store-artifacts/google-play-store/phone-screenshot-2-1080x1920.png',
+  'store-artifacts/google-play-store/tablet-7inch-screenshot-1200x1920.png',
+  'store-artifacts/google-play-store/tablet-10inch-screenshot-1600x2560.png',
+  'store-artifacts/apple-app-store/app-store-icon-1024x1024.png',
+  'store-artifacts/apple-app-store/iphone-6.7-inch-screenshot-1-1290x2796.png',
+  'store-artifacts/apple-app-store/iphone-6.7-inch-screenshot-2-1290x2796.png',
+  'store-artifacts/apple-app-store/iphone-6.5-inch-screenshot-1242x2688.png',
+  'store-artifacts/apple-app-store/ipad-pro-12.9-inch-screenshot-2048x2732.png'
+];
+requiredStoreArtifacts.forEach(relPath => {
+  assert(fs.existsSync(path.join(__dirname, '..', relPath)), `Required store upload artifact missing: ${relPath}`);
+});
+console.log('✓ All Web, Android, iOS icons, favicons, splash screens & Play Store / App Store upload artifacts verified');
+
 console.log('\n========================================');
-console.log('ALL HYBRID MOBILE APP TESTS PASSED! (4/4)');
+console.log('ALL HYBRID MOBILE APP TESTS PASSED! (5/5)');
 console.log('========================================');
 

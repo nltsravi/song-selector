@@ -656,7 +656,7 @@ function renderSongs() {
   let html = '';
   const defaultSongImage = (typeof LOGO_IMAGE_BASE64 !== 'undefined' && LOGO_IMAGE_BASE64)
     ? ('data:image/png;base64,' + LOGO_IMAGE_BASE64)
-    : 'images/omkaarssl-logo-transperent-black.png';
+    : 'images/app-logo.png';
 
   state.filteredSongs.forEach(song => {
     const isSelected = state.selectedSongIds.has(song.id);
