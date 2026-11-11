@@ -667,6 +667,92 @@
       };
     },
 
+    createValidPdfBinary: function(colName, songs, lang) {
+      const pages = [];
+      
+      // Page 1: Cover Page
+      let p1Stream = "BT\n/F1 26 Tf\n50 520 Td\n(" + String(colName || 'Collection').replace(/[()\\]/g, "") + ") Tj\nET\n";
+      p1Stream += "BT\n/F1 12 Tf\n50 480 Td\n(Language: " + String(lang || 'English') + ") Tj\nET\n";
+      p1Stream += "BT\n/F1 10 Tf\n50 80 Td\n(c OmkaarSSL) Tj\nET\n";
+      pages.push(p1Stream);
+
+      // Subsequent pages for songs
+      let curStream = "";
+      let curY = 750;
+      
+      function startNewPage() {
+        if (curStream) pages.push(curStream);
+        curStream = "BT\n/F1 10 Tf\n400 800 Td\n(" + String(colName || '').replace(/[()\\]/g, "") + ") Tj\nET\n";
+        curStream += "BT\n/F1 10 Tf\n50 50 Td\n(c OmkaarSSL) Tj\nET\n";
+        curStream += "BT\n/F1 10 Tf\n520 50 Td\n(" + pages.length + ") Tj\nET\n";
+        curY = 740;
+      }
+      
+      startNewPage();
+
+      (songs || []).forEach(s => {
+        const rawLyrics = (lang.toLowerCase() === 'tamil' ? s.tamilLyrics : (lang.toLowerCase() === 'devanagari' ? s.devanagariLyrics : s.englishLyrics)) || '';
+        const lyricsLines = String(rawLyrics).split('\n');
+        
+        if (curY < 180) {
+          startNewPage();
+        }
+        
+        const safeTitle = String(s.title || '').replace(/[()\\]/g, "");
+        curStream += "BT\n/F1 14 Tf\n50 " + curY + " Td\n(" + safeTitle + ") Tj\nET\n";
+        curY -= 22;
+        
+        curStream += "BT\n/F1 11 Tf\n50 " + curY + " Td\n15 TL\n";
+        for (let line of lyricsLines) {
+          if (curY < 90) {
+            curStream += "ET\n";
+            startNewPage();
+            curStream += "BT\n/F1 11 Tf\n50 " + curY + " Td\n15 TL\n";
+          }
+          const safeLine = String(line || '').replace(/[()\\]/g, "").substring(0, 95);
+          curStream += "(" + safeLine + ") '\n";
+          curY -= 15;
+        }
+        curStream += "ET\n";
+        curY -= 20;
+      });
+      
+      if (curStream) pages.push(curStream);
+
+      let out = "%PDF-1.4\n";
+      const offsets = [];
+      function addObj(str) {
+        offsets.push(out.length);
+        out += str + "\n";
+      }
+
+      addObj("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj");
+      const totalPages = pages.length;
+      const pageObjIds = [];
+      let nextId = 4;
+      for (let i = 0; i < totalPages; i++) {
+        pageObjIds.push({ pageId: nextId, contentId: nextId + 1, stream: pages[i] });
+        nextId += 2;
+      }
+
+      const kidsStr = pageObjIds.map(p => p.pageId + " 0 R").join(" ");
+      addObj("2 0 obj\n<< /Type /Pages /Kids [" + kidsStr + "] /Count " + totalPages + " >>\nendobj");
+      addObj("3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj");
+
+      for (let p of pageObjIds) {
+        addObj(p.pageId + " 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents " + p.contentId + " 0 R >>\nendobj");
+        addObj(p.contentId + " 0 obj\n<< /Length " + p.stream.length + " >>\nstream\n" + p.stream + "endstream\nendobj");
+      }
+
+      const xrefOffset = out.length;
+      out += "xref\n0 " + (offsets.length + 1) + "\n0000000000 65535 f \n";
+      for (let o of offsets) {
+        out += String(o).padStart(10, "0") + " 00000 n \n";
+      }
+      out += "trailer\n<< /Size " + (offsets.length + 1) + " /Root 1 0 R >>\nstartxref\n" + xrefOffset + "\n%%EOF\n";
+      return out;
+    },
+
     apiExportCollection: function(collectionId, language, format, skipMissing) {
       const col = this.apiGetCollection(collectionId);
       const lang = language || 'English';
@@ -721,95 +807,97 @@
       const headerLogoBase64 = typeof LOGO_HEADER_BASE64 !== 'undefined' ? LOGO_HEADER_BASE64 : (typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : '');
       const watermarkBase64 = typeof LOGO_IMAGE_WATERMARK_BASE64 !== 'undefined' ? LOGO_IMAGE_WATERMARK_BASE64 : (typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : '');
 
+      // HTML document structure with header logo, center watermark, cover page, and footer structure
+      const htmlDoc = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head><meta charset='utf-8'><title>${col.name}</title>
+        <style>
+          @page {
+            margin: 0.25in 1in;
+            margin-top: 0.25in;
+            margin-bottom: 0.25in;
+            mso-header-margin: 0.25in;
+            mso-footer-margin: 0.25in;
+            mso-header: h1;
+            mso-footer: f1;
+            mso-first-header: fh1;
+            mso-first-footer: ff1;
+            mso-title-page: yes;
+          }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Tamil', 'Noto Sans Devanagari', Arial, sans-serif; line-height: 1.6; margin: 0.25in 30px; position: relative; color: #0f172a; }
+          .header-table { width: 100%; border-bottom: 1px solid #cbd5e1; margin: 0 0 8px 0; padding: 0; }
+          .header-left { text-align: left; vertical-align: bottom; padding: 0; }
+          .header-left img { width: 0.54in; height: 0.5in; opacity: 0.9; object-fit: contain; filter: brightness(1.2); display: block; margin: 0; }
+          .header-right { text-align: right; font-size: 11px; color: #64748b; vertical-align: bottom; padding: 0 0 2px 0; }
+          .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); opacity: 1; z-index: -1000; pointer-events: none; text-align: center; width: 80%; max-width: 600px; }
+          .watermark img { width: 100%; height: auto; opacity: 1; display: block; margin: 0 auto; filter: brightness(1.0) contrast(1.0); }
+          .first-page-body { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 55vh; margin: 100px 0; text-align: center; }
+          .collection-title-cover { text-align: center; color: #0f172a; font-size: 32px; font-weight: bold; }
+          h2 { color: #4338ca; margin-top: 24px; font-size: 18px; }
+          .lyrics { white-space: pre-wrap; margin-bottom: 24px; font-size: 14px; line-height: 1.8; }
+          .footer-table { width: 100%; border-top: 1px solid #cbd5e1; margin: 12px 0 0 0; padding: 0; font-size: 11px; color: #64748b; }
+          .footer-left { text-align: left; vertical-align: top; padding: 2px 0 0 0; }
+          .footer-right { text-align: right; vertical-align: top; padding: 2px 0 0 0; }
+        </style>
+        </head>
+        <body>
+          <!-- Center of page full-size watermark with very light color and subtle opacity -->
+          <div class="watermark">
+            <img src="data:image/png;base64,${watermarkBase64}" alt="Watermark" />
+          </div>
+
+          <!-- First Page Header: Logo on the left, collection name on the right side -->
+          <table class="header-table">
+            <tr>
+              <td class="header-left"><img src="data:image/png;base64,${headerLogoBase64}" alt="Logo" style="width:0.54in;height:0.5in;opacity:0.9;object-fit:contain;filter:brightness(1.2);" /></td>
+              <td class="header-right">${col.name}</td>
+            </tr>
+          </table>
+
+          <!-- First Page Body: Collection name in the center with increased font -->
+          <div class="first-page-body">
+            <div class="collection-title-cover">${col.name}</div>
+          </div>
+
+          <!-- First Page Footer: No page number -->
+          <table class="footer-table" style="page-break-after: always;">
+            <tr>
+              <td class="footer-left">© OmkaarSSL</td>
+              <td class="footer-right"></td>
+            </tr>
+          </table>
+
+          <!-- Subsequent Page Header: Logo on the left, collection name on the right side -->
+          <table class="header-table">
+            <tr>
+              <td class="header-left"><img src="data:image/png;base64,${headerLogoBase64}" alt="Logo" style="width:0.54in;height:0.5in;opacity:0.9;object-fit:contain;filter:brightness(1.2);" /></td>
+              <td class="header-right">${col.name}</td>
+            </tr>
+          </table>
+
+          <!-- Subsequent Pages: Songs -->
+          ${songsToExport.map((s) => {
+            let l = (lang.toLowerCase() === 'tamil' ? s.tamilLyrics : (lang.toLowerCase() === 'devanagari' ? s.devanagariLyrics : s.englishLyrics)) || '';
+            return `<div class="song-entry" style="page-break-inside: avoid; margin-bottom: 24px;"><h2>${s.title}</h2><div class="lyrics">${l.replace(/\n/g, '<br>')}</div></div>`;
+          }).join('')}
+
+          <!-- Subsequent Page Footer: Page number starting from 1 -->
+          <table class="footer-table">
+            <tr>
+              <td class="footer-left">© OmkaarSSL</td>
+              <td class="footer-right"><span style="mso-field-code:'PAGE'">1</span></td>
+            </tr>
+          </table>
+        </body></html>
+      `;
+
       if (fmt === 'DOCX') {
         mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        // HTML wrapper with header logo, center watermark, and footer structure
-        const htmlDoc = `
-          <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-          <head><meta charset='utf-8'><title>${col.name}</title>
-          <style>
-            @page {
-              margin: 0.25in 1in;
-              margin-top: 0.25in;
-              margin-bottom: 0.25in;
-              mso-header-margin: 0.25in;
-              mso-footer-margin: 0.25in;
-              mso-header: h1;
-              mso-footer: f1;
-              mso-first-header: fh1;
-              mso-first-footer: ff1;
-              mso-title-page: yes;
-            }
-            body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; margin: 0.25in 30px; position: relative; }
-            .header-table { width: 100%; border-bottom: 1px solid #cbd5e1; margin: 0 0 8px 0; padding: 0; }
-            .header-left { text-align: left; vertical-align: bottom; padding: 0; }
-            .header-left img { width: 0.54in; height: 0.5in; opacity: 0.9; object-fit: contain; filter: brightness(1.2); display: block; margin: 0; }
-            .header-right { text-align: right; font-size: 11px; color: #64748b; vertical-align: bottom; padding: 0 0 2px 0; }
-            .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); opacity: 1; z-index: -1000; pointer-events: none; text-align: center; width: 80%; max-width: 600px; }
-            .watermark img { width: 100%; height: auto; opacity: 1; display: block; margin: 0 auto; filter: brightness(1.0) contrast(1.0); }
-            .first-page-body { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 55vh; margin: 100px 0; text-align: center; }
-            .collection-title-cover { text-align: center; color: #0f172a; font-size: 32px; font-weight: bold; }
-            h2 { color: #4338ca; margin-top: 24px; }
-            .lyrics { white-space: pre-wrap; margin-bottom: 24px; font-size: 14px; line-height: 1.8; }
-            .footer-table { width: 100%; border-top: 1px solid #cbd5e1; margin: 12px 0 0 0; padding: 0; font-size: 11px; color: #64748b; }
-            .footer-left { text-align: left; vertical-align: top; padding: 2px 0 0 0; }
-            .footer-right { text-align: right; vertical-align: top; padding: 2px 0 0 0; }
-          </style>
-          </head>
-          <body>
-            <!-- Center of page full-size watermark with very light color and subtle opacity -->
-            <div class="watermark">
-              <img src="data:image/png;base64,${watermarkBase64}" alt="Watermark" />
-            </div>
-
-            <!-- First Page Header: Logo on the left, collection name on the right side -->
-            <table class="header-table">
-              <tr>
-                <td class="header-left"><img src="data:image/png;base64,${headerLogoBase64}" alt="Logo" style="width:0.54in;height:0.5in;opacity:0.9;object-fit:contain;filter:brightness(1.2);" /></td>
-                <td class="header-right">${col.name}</td>
-              </tr>
-            </table>
-
-            <!-- First Page Body: Collection name in the center with increased font -->
-            <div class="first-page-body">
-              <div class="collection-title-cover">${col.name}</div>
-            </div>
-
-            <!-- First Page Footer: No page number -->
-            <table class="footer-table" style="page-break-after: always;">
-              <tr>
-                <td class="footer-left">© OmkaarSSL</td>
-                <td class="footer-right"></td>
-              </tr>
-            </table>
-
-            <!-- Subsequent Page Header: Logo on the left, collection name on the right side -->
-            <table class="header-table">
-              <tr>
-                <td class="header-left"><img src="data:image/png;base64,${headerLogoBase64}" alt="Logo" style="width:0.54in;height:0.5in;opacity:0.9;object-fit:contain;filter:brightness(1.2);" /></td>
-                <td class="header-right">${col.name}</td>
-              </tr>
-            </table>
-
-            <!-- Subsequent Pages: Songs -->
-            ${songsToExport.map((s) => {
-              let l = (lang.toLowerCase() === 'tamil' ? s.tamilLyrics : (lang.toLowerCase() === 'devanagari' ? s.devanagariLyrics : s.englishLyrics)) || '';
-              return `<h2>${s.title}</h2><div class="lyrics">${l.replace(/\n/g, '<br>')}</div><div style="margin-bottom:24px;"></div>`;
-            }).join('')}
-
-            <!-- Subsequent Page Footer: Page number starting from 1 -->
-            <table class="footer-table">
-              <tr>
-                <td class="footer-left">© OmkaarSSL</td>
-                <td class="footer-right"><span style="mso-field-code:'PAGE'">1</span></td>
-              </tr>
-            </table>
-          </body></html>
-        `;
         binaryString = unescape(encodeURIComponent(htmlDoc));
       } else {
-        // PDF MIME type
+        // PDF format: generate valid PDF-1.4 binary data
         mimeType = 'application/pdf';
+        binaryString = this.createValidPdfBinary(col.name, songsToExport, lang);
       }
 
       const base64Data = btoa(binaryString);
@@ -830,6 +918,7 @@
         filename: filename,
         mimeType: mimeType,
         base64Data: base64Data,
+        htmlDoc: htmlDoc,
         driveUrl: 'https://drive.google.com/drive/u/0/my-drive',
         userEmail: activeSimulatedUser ? activeSimulatedUser.email : 'user@example.com',
         savedToDrive: true,

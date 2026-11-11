@@ -1771,8 +1771,12 @@ window.executeExport = async function() {
       return;
     }
 
-    // Trigger direct browser download of base64 blob
-    downloadExportBlob(result.base64Data, result.filename, result.mimeType);
+    if (result.format === 'PDF') {
+      await generateAndDownloadPdf(result);
+    } else {
+      // Trigger direct browser download of base64 blob (DOCX)
+      downloadExportBlob(result.base64Data, result.filename, result.mimeType);
+    }
 
     const userEmail = (state.currentUser && state.currentUser.email) ? state.currentUser.email : '';
     const driveNote = userEmail ? ` and saved to Google Drive for ${userEmail}` : ' and saved to Google Drive';
@@ -1789,6 +1793,51 @@ window.executeExport = async function() {
     exportBtn.innerHTML = originalText;
   }
 };
+
+/**
+ * Generate and download valid binary PDF document
+ */
+async function generateAndDownloadPdf(result) {
+  if (typeof html2pdf !== 'undefined' && result.htmlDoc) {
+    const container = document.createElement('div');
+    container.id = 'pdf-render-container';
+    container.style.position = 'fixed';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '794px'; // Standard A4 width at 96 DPI
+    container.style.background = '#ffffff';
+    container.style.color = '#0f172a';
+    container.style.padding = '0';
+    container.style.boxSizing = 'border-box';
+    container.innerHTML = result.htmlDoc;
+    document.body.appendChild(container);
+
+    try {
+      const opt = {
+        margin: [10, 10, 10, 10], // 10mm margins
+        filename: result.filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      };
+
+      await html2pdf().from(container).set(opt).save();
+    } catch (pdfErr) {
+      console.warn('html2pdf generation warning, falling back to binary blob download:', pdfErr);
+      if (result.base64Data) {
+        downloadExportBlob(result.base64Data, result.filename, 'application/pdf');
+      }
+    } finally {
+      if (container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+    }
+  } else if (result.base64Data) {
+    // Direct valid binary blob download
+    downloadExportBlob(result.base64Data, result.filename, 'application/pdf');
+  }
+}
 
 /**
  * Base64 file download trigger

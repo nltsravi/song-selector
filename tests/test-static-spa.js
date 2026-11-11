@@ -166,6 +166,24 @@ const exportServiceGs = fs.readFileSync(path.join(__dirname, '../apps-script/Exp
 assert(mockBackendJs.includes('savedToDrive: true') && mockBackendJs.includes('driveUrl'), 'mock-backend.js must return driveUrl and savedToDrive');
 assert(exportServiceGs.includes('addEditor(userEmail)') || exportServiceGs.includes('userEmail'), 'ExportService.gs must share file with user email');
 
+// Verify Client-Side PDF Generation & Valid Binary PDF Creation
+const html2pdfPath = path.join(__dirname, '../public/html2pdf.bundle.min.js');
+assert(fs.existsSync(html2pdfPath), 'public/html2pdf.bundle.min.js must exist for client-side PDF export');
+assert(indexHtml.includes('html2pdf.bundle.min.js'), 'index.html must load html2pdf.bundle.min.js');
+assert(appJs.includes('generateAndDownloadPdf'), 'app.js must implement generateAndDownloadPdf');
+assert(mockBackendJs.includes('createValidPdfBinary'), 'mock-backend.js must implement createValidPdfBinary');
+
+// Test that createValidPdfBinary generates a valid %PDF-1.4 document
+const mockScope = {
+  localStorage: { getItem: () => null, setItem: () => null }
+};
+eval(`(function(window, localStorage) { ${mockBackendJs} })(mockScope, mockScope.localStorage)`);
+assert(mockScope.MockBackend && typeof mockScope.MockBackend.createValidPdfBinary === 'function', 'MockBackend.createValidPdfBinary must be a function');
+const testPdfBinary = mockScope.MockBackend.createValidPdfBinary('Devotional Collection', songs.slice(0, 5), 'English');
+assert(testPdfBinary.startsWith('%PDF-1.4'), 'Generated PDF must start with %PDF-1.4 header');
+assert(testPdfBinary.includes('%%EOF'), 'Generated PDF must end with %%EOF trailer');
+console.log('✓ Valid PDF document generation & html2pdf client engine verified');
+
 console.log('✓ Header nav, Footer legal links, Drive notice & NeoLumina copyright verified');
 
 console.log('\n========================================');

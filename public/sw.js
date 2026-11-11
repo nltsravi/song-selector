@@ -13,6 +13,7 @@ const ASSETS_TO_CACHE = [
   './logo-data.js',
   './songs-data.js',
   './auth-config.js',
+  './html2pdf.bundle.min.js',
   './songs.json',
   './manifest.json',
   './images/omkaarssl-logo-transperent-black.png'
