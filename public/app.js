@@ -493,6 +493,23 @@ async function loadSongs() {
   renderSongsLoading();
 
   try {
+    if ((!window.SONGS_DATABASE || window.SONGS_DATABASE.length === 0) && typeof fetch === 'function') {
+      try {
+        const res = await fetch('songs.json');
+        if (res.ok) {
+          const fetchedSongs = await res.json();
+          if (Array.isArray(fetchedSongs) && fetchedSongs.length > 0) {
+            window.SONGS_DATABASE = fetchedSongs;
+            if (window.MockBackend && typeof window.MockBackend.initSongs === 'function') {
+              window.MockBackend.initSongs(fetchedSongs);
+            }
+          }
+        }
+      } catch (e) {
+        // Continue to API.call fallback
+      }
+    }
+
     const songs = await API.call('apiGetSongs');
     state.songs = Array.isArray(songs) ? songs : [];
     filterSongs();
@@ -1531,6 +1548,29 @@ window.closeModal = function(id) {
     lastFocusedElement.focus();
   }
   setTimeout(adjustEmbedHeight, 80);
+};
+
+/**
+ * Lyrics Font Size Scaling Controls for Responsive & Mobile Reader
+ */
+let currentLyricsFontSize = parseInt(localStorage.getItem('LYRICS_FONT_SIZE') || '16', 10);
+if (isNaN(currentLyricsFontSize)) currentLyricsFontSize = 16;
+document.documentElement.style.setProperty('--lyrics-font-size', currentLyricsFontSize + 'px');
+
+window.adjustLyricsFontSize = function(delta) {
+  currentLyricsFontSize = Math.min(28, Math.max(12, currentLyricsFontSize + delta * 2));
+  localStorage.setItem('LYRICS_FONT_SIZE', currentLyricsFontSize);
+  document.documentElement.style.setProperty('--lyrics-font-size', currentLyricsFontSize + 'px');
+  const contentArea = document.getElementById('lyrics-content-area');
+  if (contentArea) contentArea.style.fontSize = currentLyricsFontSize + 'px';
+};
+
+window.resetLyricsFontSize = function() {
+  currentLyricsFontSize = 16;
+  localStorage.setItem('LYRICS_FONT_SIZE', currentLyricsFontSize);
+  document.documentElement.style.setProperty('--lyrics-font-size', '16px');
+  const contentArea = document.getElementById('lyrics-content-area');
+  if (contentArea) contentArea.style.fontSize = '16px';
 };
 
 /**

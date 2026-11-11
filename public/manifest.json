@@ -1,0 +1,26 @@
+{
+  "name": "Song Collection & Lyrics Library",
+  "short_name": "SongLibrary",
+  "description": "Multi-lingual Song Collection and Lyrics Export Application with Tamil, English, and Devanagari lyrics.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#1e293b",
+  "icons": [
+    {
+      "src": "images/omkaarssl-logo-transperent-black.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "images/omkaarssl-logo-transperent-black.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "music", "lifestyle"]
+}

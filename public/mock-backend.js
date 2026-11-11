@@ -180,13 +180,24 @@
 
   // Storage in localStorage or memory
   function getStoredSongs() {
-    let songs = defaultSongs;
+    let baseSongs = (typeof window !== 'undefined' && window.SONGS_DATABASE && Array.isArray(window.SONGS_DATABASE) && window.SONGS_DATABASE.length > 0)
+      ? window.SONGS_DATABASE
+      : defaultSongs;
+
+    let songs = baseSongs;
     const raw = localStorage.getItem('SONGS_DATABASE');
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0].imageUrl !== 'undefined') {
+        if (Array.isArray(parsed) && parsed.length >= baseSongs.length) {
           songs = parsed;
+        } else if (Array.isArray(parsed) && parsed.length > 0) {
+          const parsedMap = new Map(parsed.map(p => [p.id, p]));
+          songs = baseSongs.map(base => {
+            const saved = parsedMap.get(base.id);
+            return saved ? Object.assign({}, base, saved) : base;
+          });
+          localStorage.setItem('SONGS_DATABASE', JSON.stringify(songs));
         }
       } catch (e) {}
     }
@@ -285,6 +296,15 @@
   }
 
   window.MockBackend = {
+    initSongs: function(newSongs) {
+      if (Array.isArray(newSongs) && newSongs.length > 0) {
+        window.SONGS_DATABASE = newSongs;
+        localStorage.setItem('SONGS_DATABASE', JSON.stringify(newSongs));
+        return newSongs;
+      }
+      return getStoredSongs();
+    },
+
     setSimulatedUser: function(userType) {
       if (userType === 'logged_in_gmail') {
         activeSimulatedUser = {
