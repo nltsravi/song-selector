@@ -197,7 +197,11 @@ assert(exportServiceCode.includes('cellRight.setVerticalAlignment(DocumentApp.Ve
 assert(exportServiceCode.includes('cellLeft.setPaddingTop(0)'), 'ExportService must set zero top padding for logo cell');
 assert(exportServiceCode.includes('cellRight.setPaddingTop(0)'), 'ExportService must set zero top padding for title cell');
 
-console.log('✓ Export first page, header collection name on right, footer numbering (page 1 none, page 2+ starts at 1), watermark & reduced header/footer white space verified.');
+// Assert lyrics font size is set to 14 in both ExportService and mock-backend
+assert(exportServiceCode.includes('lyricsPara.setFontSize(14)'), 'ExportService must set lyrics font size to 14');
+assert(mockBackendCode.includes('font-size: 14px;'), 'mock-backend must set lyrics font size to 14px');
+
+console.log('✓ Export first page, header collection name on right, footer numbering (page 1 none, page 2+ starts at 1), watermark, lyrics font size 14 & reduced header/footer white space verified.');
 
 // Test 7: CSV Columns, Song Card Layout, Audio/Video Icons, and Favicon
 console.log('\nTest 7: CSV Columns, Song Card Layout, Audio/Video Icons, and Favicon');

@@ -432,6 +432,14 @@ var ExportService = {
         }
 
         var lyricsPara = body.appendParagraph(curSong.lyrics);
+        try {
+          lyricsPara.setFontSize(14);
+        } catch (fsErr) {}
+        try {
+          if (lyricsPara.editAsText) {
+            lyricsPara.editAsText().setFontSize(14);
+          }
+        } catch (eatErr) {}
         lyricsPara.setLineSpacing(1.15);
 
         if (sIdx < songsToExport.length - 1) {
