@@ -1595,7 +1595,7 @@ h1, h2, h3, h4, .font-heading {
   border: 1px solid var(--border-card);
   border-radius: var(--radius-md);
   padding: 1.5rem;
-  font-size: 1.05rem;
+  font-size: var(--lyrics-font-size, 1.05rem);
   line-height: 1.8;
   white-space: pre-wrap;
   min-height: 220px;
@@ -2333,7 +2333,7 @@ h1, h2, h3, h4, .font-heading {
 
   .lyrics-content-area {
     padding: 1rem;
-    font-size: 0.95rem;
+    font-size: var(--lyrics-font-size, 0.95rem);
     line-height: 1.7;
     max-height: 45vh;
     min-height: 160px;

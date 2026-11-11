@@ -3,10 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-  <title>Song Collection & Lyrics Library - Google Sites App</title>
+  <title>Song Collection & Lyrics Library</title>
   
   <link rel="icon" type="image/png" href="images/omkaarssl-logo-transperent-black.png">
   <link rel="apple-touch-icon" href="images/omkaarssl-logo-transperent-black.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e293b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SongLibrary">
   
   <!-- Modern Google Fonts with full Tamil and Devanagari Unicode support -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -212,9 +217,16 @@
     <div class="modal-window">
       <div class="modal-header">
         <h3 id="modal-lyrics-title">Song Title</h3>
-        <button class="btn-modal-close" onclick="closeModal('modal-lyrics')" title="Close" aria-label="Close lyrics preview">
-          <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <div class="font-size-adjuster" role="group" aria-label="Text size controls" style="display:inline-flex; align-items:center; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; overflow:hidden;">
+            <button type="button" onclick="adjustLyricsFontSize(-1)" title="Decrease text size" style="border:none; background:transparent; padding:4px 9px; font-weight:700; font-size:0.75rem; cursor:pointer; color:#475569;" aria-label="Decrease text size">A-</button>
+            <button type="button" onclick="resetLyricsFontSize()" title="Reset text size" style="border:none; border-left:1px solid #cbd5e1; border-right:1px solid #cbd5e1; background:transparent; padding:4px 9px; font-weight:700; font-size:0.75rem; cursor:pointer; color:#475569;" aria-label="Reset text size">A</button>
+            <button type="button" onclick="adjustLyricsFontSize(1)" title="Increase text size" style="border:none; background:transparent; padding:4px 9px; font-weight:700; font-size:0.75rem; cursor:pointer; color:#475569;" aria-label="Increase text size">A+</button>
+          </div>
+          <button class="btn-modal-close" onclick="closeModal('modal-lyrics')" title="Close" aria-label="Close lyrics preview">
+            <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
       </div>
       <div class="modal-body">
         <div class="lyrics-lang-tabs" id="lyrics-tabs-container" role="tablist" aria-label="Lyrics languages"></div>
@@ -508,10 +520,18 @@
 
   <!-- Load Mock Backend & Client Logic -->
   <script src="logo-data.js"></script>
+  <script src="songs-data.js"></script>
   <script src="mock-backend.js"></script>
   <script src="app.js"></script>
 
   <script>
+    // Register Service Worker for offline PWA & Mobile support
+    if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch((e) => console.log('SW registration note:', e));
+      });
+    }
+
     // Sync dropdown with active simulated user
     document.addEventListener('DOMContentLoaded', () => {
       const simSelect = document.getElementById('sim-user-select');
