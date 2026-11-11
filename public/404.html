@@ -12,6 +12,11 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="SongLibrary">
+
+  <!-- Always fetch fresh version on reload without stale caching -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   
   <!-- Modern Google Fonts with full Tamil and Devanagari Unicode support -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,7 +27,7 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <!-- Load Styles from apps-script/styles.html content -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=1.0.4">
 </head>
 <body>
   <!-- Ambient background glow effects -->
@@ -516,19 +521,22 @@
   <!-- Toast Container -->
   <div class="toast-container" id="toast-container" role="status" aria-live="polite"></div>
 
-  <!-- Load Mock Backend & Client Logic -->
-  <script src="html2pdf.bundle.min.js"></script>
-  <script src="logo-data.js"></script>
-  <script src="songs-data.js"></script>
-  <script src="auth-config.js"></script>
-  <script src="mock-backend.js"></script>
-  <script src="app.js"></script>
+  <!-- Load Mock Backend & Client Logic with Cache-Busting Version Query -->
+  <script src="html2pdf.bundle.min.js?v=1.0.4"></script>
+  <script src="logo-data.js?v=1.0.4"></script>
+  <script src="songs-data.js?v=1.0.4"></script>
+  <script src="auth-config.js?v=1.0.4"></script>
+  <script src="mock-backend.js?v=1.0.4"></script>
+  <script src="app.js?v=1.0.4"></script>
 
   <script>
-    // Register Service Worker for offline PWA & Mobile support
+    // Register Service Worker for offline PWA & Mobile support with immediate update check
     if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch((e) => console.log('SW registration note:', e));
+        navigator.serviceWorker.register('sw.js').then((registration) => {
+          // Immediately check for SW update on each page load
+          registration.update();
+        }).catch((e) => console.log('SW registration note:', e));
       });
     }
   </script>

@@ -174,8 +174,12 @@ assert(appJs.includes('generateAndDownloadPdf'), 'app.js must implement generate
 assert(mockBackendJs.includes('createValidPdfBinary'), 'mock-backend.js must implement createValidPdfBinary');
 
 // Test that createValidPdfBinary generates a valid %PDF-1.4 document
+const memoryStore = {};
 const mockScope = {
-  localStorage: { getItem: () => null, setItem: () => null }
+  localStorage: {
+    getItem: (k) => memoryStore[k] || null,
+    setItem: (k, v) => { memoryStore[k] = String(v); }
+  }
 };
 eval(`(function(window, localStorage) { ${mockBackendJs} })(mockScope, mockScope.localStorage)`);
 assert(mockScope.MockBackend && typeof mockScope.MockBackend.createValidPdfBinary === 'function', 'MockBackend.createValidPdfBinary must be a function');
@@ -186,7 +190,53 @@ console.log('✓ Valid PDF document generation & html2pdf client engine verified
 
 console.log('✓ Header nav, Footer legal links, Drive notice & NeoLumina copyright verified');
 
+// 7. Cache-Busting, Network-First Service Worker & Safe Unicode Base64 Export
+console.log('\nTest 7: Cache-Control Meta, Network-First SW & Safe Base64 Unicode Export');
+
+// Check Cache-Control meta tags across all HTML files
+const htmlFiles = ['index.html', '404.html', 'about.html', 'contact.html', 'terms.html', 'privacy.html'];
+htmlFiles.forEach((file) => {
+  const content = fs.readFileSync(path.join(__dirname, '../public', file), 'utf8');
+  assert(content.includes('http-equiv="Cache-Control"') && content.includes('no-cache'), `${file} must include Cache-Control no-cache meta tag`);
+  assert(content.includes('http-equiv="Pragma"'), `${file} must include Pragma no-cache meta tag`);
+  assert(content.includes('http-equiv="Expires"'), `${file} must include Expires 0 meta tag`);
+});
+console.log('✓ All HTML files configured with Cache-Control no-cache meta tags');
+
+// Verify sw.js has network-first strategy
+assert(swCode.includes('CACHE_NAME = \'song-selector-v2\''), 'sw.js must use CACHE_NAME song-selector-v2');
+assert(swCode.includes('fetch(event.request)'), 'sw.js must attempt network fetch first');
+assert(swCode.includes('caches.match(event.request)'), 'sw.js must fallback to cache on network failure');
+console.log('✓ Service Worker Network-First strategy verified');
+
+// Verify safeBase64Encode in mock-backend
+assert(typeof mockScope.MockBackend.safeBase64Encode === 'function', 'MockBackend must export safeBase64Encode');
+const tamilText = 'வணக்கம் உலகம் தமிழ் வரிகள் 123';
+const encodedTamil = mockScope.MockBackend.safeBase64Encode(tamilText);
+assert(encodedTamil && typeof encodedTamil === 'string', 'safeBase64Encode must return base64 string');
+assert(Buffer.from(encodedTamil, 'base64').toString('utf8') === tamilText, 'Decoded base64 must match original Tamil text');
+
+const devanagariText = 'नमस्ते दुनिया देवनागरी बोल 456';
+const encodedDevanagari = mockScope.MockBackend.safeBase64Encode(devanagariText);
+assert(Buffer.from(encodedDevanagari, 'base64').toString('utf8') === devanagariText, 'Decoded base64 must match original Devanagari text');
+
+// Initialize songs & collection in mockScope and test apiExportCollection for Tamil and Devanagari
+mockScope.MockBackend.initSongs(songs);
+const createdCol = mockScope.MockBackend.apiCreateCollection('Tamil Devotional Collection', [songs[0].id, songs[1].id]);
+
+// Test PDF export with Tamil lyrics (should not throw InvalidCharacterError)
+const tamilPdfExport = mockScope.MockBackend.apiExportCollection(createdCol.collectionId, 'Tamil', 'PDF', true);
+assert(tamilPdfExport.success, 'Tamil PDF export must succeed');
+assert(tamilPdfExport.base64Data && tamilPdfExport.base64Data.length > 0, 'Tamil PDF export must return base64Data');
+assert(tamilPdfExport.mimeType === 'application/pdf', 'Tamil PDF export must have PDF mimeType');
+
+// Test DOCX export with Devanagari lyrics (should not throw InvalidCharacterError)
+const devanagariDocxExport = mockScope.MockBackend.apiExportCollection(createdCol.collectionId, 'Devanagari', 'DOCX', true);
+assert(devanagariDocxExport.success, 'Devanagari DOCX export must succeed');
+assert(devanagariDocxExport.base64Data && devanagariDocxExport.base64Data.length > 0, 'Devanagari DOCX export must return base64Data');
+console.log('✓ Safe base64 export verified for Tamil and Devanagari (no InvalidCharacterError)');
+
 console.log('\n========================================');
-console.log('ALL STATIC APP & MOBILE TESTS PASSED! (6/6)');
+console.log('ALL STATIC APP & MOBILE TESTS PASSED! (7/7)');
 console.log('========================================');
 

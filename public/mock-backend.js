@@ -295,7 +295,33 @@
     return `${day}-${mon}-${yr}`;
   }
 
+  function safeBase64Encode(str) {
+    if (!str) return '';
+    if (typeof TextEncoder !== 'undefined') {
+      const bytes = new TextEncoder().encode(str);
+      let binary = '';
+      const chunk = 8192;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+      }
+      if (typeof btoa !== 'undefined') {
+        return btoa(binary);
+      } else if (typeof Buffer !== 'undefined') {
+        return Buffer.from(bytes).toString('base64');
+      }
+    }
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(str, 'utf-8').toString('base64');
+    }
+    try {
+      return btoa(unescape(encodeURIComponent(str)));
+    } catch (e) {
+      return btoa(str);
+    }
+  }
+
   window.MockBackend = {
+    safeBase64Encode: safeBase64Encode,
     initSongs: function(newSongs) {
       if (Array.isArray(newSongs) && newSongs.length > 0) {
         window.SONGS_DATABASE = newSongs;
@@ -671,8 +697,8 @@
       const pages = [];
       
       // Page 1: Cover Page
-      let p1Stream = "BT\n/F1 26 Tf\n50 520 Td\n(" + String(colName || 'Collection').replace(/[()\\]/g, "") + ") Tj\nET\n";
-      p1Stream += "BT\n/F1 12 Tf\n50 480 Td\n(Language: " + String(lang || 'English') + ") Tj\nET\n";
+      let p1Stream = "BT\n/F1 26 Tf\n50 520 Td\n(" + String(colName || 'Collection').replace(/[()\\\r\n]/g, "") + ") Tj\nET\n";
+      p1Stream += "BT\n/F1 12 Tf\n50 480 Td\n(Language: " + String(lang || 'English').replace(/[()\\\r\n]/g, "") + ") Tj\nET\n";
       p1Stream += "BT\n/F1 10 Tf\n50 80 Td\n(c OmkaarSSL) Tj\nET\n";
       pages.push(p1Stream);
 
@@ -682,7 +708,7 @@
       
       function startNewPage() {
         if (curStream) pages.push(curStream);
-        curStream = "BT\n/F1 10 Tf\n400 800 Td\n(" + String(colName || '').replace(/[()\\]/g, "") + ") Tj\nET\n";
+        curStream = "BT\n/F1 10 Tf\n400 800 Td\n(" + String(colName || '').replace(/[()\\\r\n]/g, "") + ") Tj\nET\n";
         curStream += "BT\n/F1 10 Tf\n50 50 Td\n(c OmkaarSSL) Tj\nET\n";
         curStream += "BT\n/F1 10 Tf\n520 50 Td\n(" + pages.length + ") Tj\nET\n";
         curY = 740;
@@ -698,7 +724,7 @@
           startNewPage();
         }
         
-        const safeTitle = String(s.title || '').replace(/[()\\]/g, "");
+        const safeTitle = String(s.title || '').replace(/[()\\\r\n]/g, "");
         curStream += "BT\n/F1 14 Tf\n50 " + curY + " Td\n(" + safeTitle + ") Tj\nET\n";
         curY -= 22;
         
@@ -709,7 +735,7 @@
             startNewPage();
             curStream += "BT\n/F1 11 Tf\n50 " + curY + " Td\n15 TL\n";
           }
-          const safeLine = String(line || '').replace(/[()\\]/g, "").substring(0, 95);
+          const safeLine = String(line || '').replace(/[()\\\r\n]/g, "").substring(0, 95);
           curStream += "(" + safeLine + ") '\n";
           curY -= 15;
         }
@@ -891,16 +917,18 @@
         </body></html>
       `;
 
+      mimeType = 'text/plain;charset=utf-8';
+      let base64Data = '';
+
       if (fmt === 'DOCX') {
         mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        binaryString = unescape(encodeURIComponent(htmlDoc));
+        base64Data = safeBase64Encode(htmlDoc);
       } else {
         // PDF format: generate valid PDF-1.4 binary data
         mimeType = 'application/pdf';
-        binaryString = this.createValidPdfBinary(col.name, songsToExport, lang);
+        const pdfBinary = this.createValidPdfBinary(col.name, songsToExport, lang);
+        base64Data = safeBase64Encode(pdfBinary);
       }
-
-      const base64Data = btoa(binaryString);
 
       // Update last exported
       const cols = getStoredCollections();
