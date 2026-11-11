@@ -9,6 +9,7 @@
     "sync-songs": "node scripts/download-songs.js",
     "sync-auth": "node scripts/build-auth-config.js",
     "build": "node scripts/download-songs.js && node scripts/build-auth-config.js",
+    "deploy:pages": "node scripts/build-auth-config.js && git push origin $(git subtree split --prefix public):refs/heads/gh-pages --force",
     "deploy": "node deploy.js deploy",
     "push": "node deploy.js push",
     "status": "node deploy.js status",
