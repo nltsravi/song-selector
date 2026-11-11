@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.github.triplet.play'
 
 def keystorePropsFile = rootProject.file("keystore.properties")
 def keystoreProps = new Properties()
@@ -13,8 +14,8 @@ android {
         applicationId "com.neolumina.songselector"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
+        versionCode System.getenv("VERSION_CODE") ? System.getenv("VERSION_CODE").toInteger() : 1
+        versionName System.getenv("VERSION_NAME") ?: "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -24,11 +25,11 @@ android {
     }
     signingConfigs {
         release {
-            def ksPath = System.getenv("ANDROID_KEYSTORE_PATH") ?: keystoreProps.getProperty("storeFile", "upload-keystore.jks")
+            def ksPath = System.getenv("KEYSTORE_FILE") ?: System.getenv("ANDROID_KEYSTORE_PATH") ?: keystoreProps.getProperty("storeFile", "upload-keystore.jks")
             storeFile file(ksPath)
-            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: keystoreProps.getProperty("storePassword", "OmkaarSSL2026!")
-            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: keystoreProps.getProperty("keyAlias", "upload")
-            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: keystoreProps.getProperty("keyPassword", "OmkaarSSL2026!")
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: keystoreProps.getProperty("storePassword", "OmkaarSSL2026!")
+            keyAlias System.getenv("KEY_ALIAS") ?: System.getenv("ANDROID_KEY_ALIAS") ?: keystoreProps.getProperty("keyAlias", "upload")
+            keyPassword System.getenv("KEY_PASSWORD") ?: System.getenv("ANDROID_KEY_PASSWORD") ?: keystoreProps.getProperty("keyPassword", "OmkaarSSL2026!")
             enableV1Signing true
             enableV2Signing true
             enableV3Signing true
@@ -55,6 +56,12 @@ android {
             enableSplit = true
         }
     }
+}
+
+play {
+    serviceAccountCredentials.set(file(System.getenv("PLAY_SERVICE_ACCOUNT_JSON") ?: "play-service-account.json"))
+    track.set("production")
+    defaultToAppBundles.set(true)
 }
 
 repositories {
