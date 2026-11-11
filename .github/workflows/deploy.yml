@@ -2,7 +2,7 @@ name: Build & Deploy Static Song Selector SPA to GitHub Pages
 
 on:
   push:
-    branches: [ main, feature/song-selector-spa ]
+    branches: [ main, feature/song-selector-spa, feature/mobile-app ]
   workflow_dispatch:
 
 permissions:
@@ -52,7 +52,7 @@ jobs:
 
   deploy:
     needs: build
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/song-selector-spa'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/song-selector-spa' || github.ref == 'refs/heads/feature/mobile-app'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
