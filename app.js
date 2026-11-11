@@ -178,6 +178,10 @@ function adjustEmbedHeight() {
  * Initialize Application
  */
 async function initApp() {
+  const buildEl = document.getElementById('app-build-number');
+  if (buildEl && window.AUTH_CONFIG && window.AUTH_CONFIG.BUILD_NUMBER) {
+    buildEl.textContent = window.AUTH_CONFIG.BUILD_NUMBER;
+  }
   checkEmbeddedMode();
   setupEventListeners();
   initSongsViewMode();
