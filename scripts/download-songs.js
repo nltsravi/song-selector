@@ -262,6 +262,13 @@ async function main() {
   fs.writeFileSync(publicJsPath, songsDataJs, 'utf-8');
   console.log(`Wrote ${publicJsPath}`);
 
+  // Also update Auth Configuration from Git Secrets / .env
+  try {
+    require('./build-auth-config.js');
+  } catch (authErr) {
+    console.warn('Could not run build-auth-config:', authErr.message);
+  }
+
   console.log('Song list download and JSON generation complete!');
 }
 

@@ -12,6 +12,7 @@ const ASSETS_TO_CACHE = [
   './mock-backend.js',
   './logo-data.js',
   './songs-data.js',
+  './auth-config.js',
   './songs.json',
   './manifest.json',
   './images/omkaarssl-logo-transperent-black.png'
@@ -74,3 +75,4 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+

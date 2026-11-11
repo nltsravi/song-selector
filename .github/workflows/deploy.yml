@@ -1,0 +1,52 @@
+name: Build & Deploy Static Song Selector SPA
+
+on:
+  push:
+    branches: [ main, feature/song-selector-spa ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build Auth Config from Git Secrets
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          AUTHORIZED_USERS: ${{ secrets.AUTHORIZED_USERS || secrets.AUTHORIZED_EMAILS }}
+          ALLOWED_DOMAIN: ${{ secrets.ALLOWED_DOMAIN }}
+        run: |
+          node scripts/build-auth-config.js
+
+      - name: Run Test Suites
+        run: |
+          npm test
+
+      - name: Upload Static Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'public/'
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -107,3 +107,4 @@ console.log('✓ Lyrics font size scaling controls verified');
 console.log('\n========================================');
 console.log('ALL STATIC APP & MOBILE TESTS PASSED! (5/5)');
 console.log('========================================');
+
