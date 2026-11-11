@@ -24,3 +24,6 @@ Thumbs.db
 # Build and temporary files
 *.tmp
 *.log
+
+# Xcode archive directory
+*.xcarchive/
