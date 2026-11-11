@@ -105,7 +105,7 @@ assert(stylesCss.includes('--lyrics-font-size'), 'CSS must support --lyrics-font
 console.log('✓ Lyrics font size scaling controls verified');
 
 // 6. Header Navigation, Footer Navigation, Legal Pages & Google Drive Export Storage
-console.log('\nTest 6: Header Nav, Footer Legal Links, Drive Notice & Thalir Academy Copyright');
+console.log('\nTest 6: Header Nav, Footer Legal Links, Drive Notice & OmkaarSSL Copyright');
 const termsHtmlPath = path.join(__dirname, '../public/terms.html');
 const privacyHtmlPath = path.join(__dirname, '../public/privacy.html');
 const aboutHtmlPath = path.join(__dirname, '../public/about.html');
@@ -125,18 +125,18 @@ assert(indexHtml.includes('class="header-nav"'), 'Header must contain header-nav
 assert(indexHtml.includes('class="app-footer"'), 'index.html must contain app-footer');
 assert(indexHtml.includes('terms.html') && indexHtml.includes('Terms &amp; Conditions'), 'Footer must contain Terms & Conditions link');
 assert(indexHtml.includes('privacy.html') && indexHtml.includes('Privacy Policy'), 'Footer must contain Privacy Policy link');
-assert(indexHtml.includes('Thalir Academy. All rights reserved.'), 'Footer must contain Thalir Academy copyright');
+assert(indexHtml.includes('OmkaarSSL. All rights reserved.'), 'Footer must contain OmkaarSSL copyright');
 
-// Verify Legal Pages content & Thalir Academy branding
+// Verify Legal Pages content & OmkaarSSL footer copyright
 const termsContent = fs.readFileSync(termsHtmlPath, 'utf8');
 const privacyContent = fs.readFileSync(privacyHtmlPath, 'utf8');
 const aboutContent = fs.readFileSync(aboutHtmlPath, 'utf8');
 const contactContent = fs.readFileSync(contactHtmlPath, 'utf8');
 
-assert(termsContent.includes('Thalir Academy. All rights reserved.'), 'terms.html must contain Thalir Academy copyright');
-assert(privacyContent.includes('Thalir Academy. All rights reserved.'), 'privacy.html must contain Thalir Academy copyright');
-assert(aboutContent.includes('Thalir Academy. All rights reserved.'), 'about.html must contain Thalir Academy copyright');
-assert(contactContent.includes('Thalir Academy. All rights reserved.'), 'contact.html must contain Thalir Academy copyright');
+assert(termsContent.includes('OmkaarSSL. All rights reserved.'), 'terms.html must contain OmkaarSSL copyright');
+assert(privacyContent.includes('OmkaarSSL. All rights reserved.'), 'privacy.html must contain OmkaarSSL copyright');
+assert(aboutContent.includes('OmkaarSSL. All rights reserved.'), 'about.html must contain OmkaarSSL copyright');
+assert(contactContent.includes('OmkaarSSL. All rights reserved.'), 'contact.html must contain OmkaarSSL copyright');
 
 // Verify Header & Footer Display Across All Application Pages
 [termsContent, privacyContent, aboutContent, contactContent].forEach((pageHtml, i) => {
@@ -188,7 +188,7 @@ assert(testPdfBinary.startsWith('%PDF-1.4'), 'Generated PDF must start with %PDF
 assert(testPdfBinary.includes('%%EOF'), 'Generated PDF must end with %%EOF trailer');
 console.log('✓ Valid PDF document generation & html2pdf client engine verified');
 
-console.log('✓ Header nav, Footer legal links, Drive notice & Thalir Academy copyright verified');
+console.log('✓ Header nav, Footer legal links, Drive notice & OmkaarSSL copyright verified');
 
 // 7. Cache-Busting, Network-First Service Worker & Safe Unicode Base64 Export
 console.log('\nTest 7: Cache-Control Meta, Network-First SW & Safe Base64 Unicode Export');
