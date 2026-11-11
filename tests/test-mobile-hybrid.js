@@ -39,7 +39,9 @@ assert(fs.existsSync(androidWebAssetsIndex), 'Android bundled web assets (index.
 
 const manifestXml = fs.readFileSync(androidManifestPath, 'utf8');
 assert(manifestXml.includes('android.permission.INTERNET'), 'AndroidManifest.xml must include INTERNET permission');
-console.log('✓ Native Android project, MainActivity, and bundled web assets verified');
+assert(manifestXml.includes('android.permission.ACCESS_NETWORK_STATE'), 'AndroidManifest.xml must include ACCESS_NETWORK_STATE permission');
+assert(manifestXml.includes('android:scheme="com.neolumina.songselector"'), 'AndroidManifest.xml must register OAuth deep-link scheme');
+console.log('✓ Native Android project, MainActivity, OAuth deep link, and bundled web assets verified');
 
 // 3. Verify Native iOS Project Structure
 console.log('\nTest 3: Native iOS Project Structure (ios/)');
@@ -57,7 +59,9 @@ assert(fs.existsSync(iosWebAssetsIndex), 'iOS bundled web assets (index.html) mu
 
 const infoPlist = fs.readFileSync(iosInfoPlistPath, 'utf8');
 assert(infoPlist.includes('Song Collection &amp; Lyrics Library') || infoPlist.includes('CFBundleDisplayName'), 'iOS Info.plist must include display name');
-console.log('✓ Native iOS Xcode project, AppDelegate.swift, and bundled web assets verified');
+assert(infoPlist.includes('UIFileSharingEnabled'), 'iOS Info.plist must enable UIFileSharingEnabled for exported songbooks');
+assert(infoPlist.includes('CFBundleURLSchemes'), 'iOS Info.plist must configure CFBundleURLSchemes for OAuth redirect');
+console.log('✓ Native iOS Xcode project, AppDelegate.swift, file sharing, and bundled web assets verified');
 
 // 4. Verify NativeMobileBridge (public/capacitor-bridge.js) & Feature Parity
 console.log('\nTest 4: Native Mobile Bridge (PDF/DOCX Share Sheet, Back Button, OAuth)');
@@ -73,11 +77,14 @@ assert(bridgeCode.includes('openMobileGoogleSignInModal'), 'capacitor-bridge.js 
 
 const indexHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
 const appJs = fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8');
+const workflowYaml = fs.readFileSync(path.join(__dirname, '../.github/workflows/deploy.yml'), 'utf8');
 assert(indexHtml.includes('capacitor-bridge.js'), 'public/index.html must load capacitor-bridge.js');
 assert(appJs.includes('NativeMobileBridge.saveAndShareFile'), 'public/app.js must invoke NativeMobileBridge.saveAndShareFile for mobile PDF/DOCX exports');
 assert(appJs.includes('NativeMobileBridge.openMobileGoogleSignInModal'), 'public/app.js must support NativeMobileBridge.openMobileGoogleSignInModal');
+assert(workflowYaml.includes('assembleDebug'), 'deploy.yml must build the Android hybrid APK');
+assert(workflowYaml.includes('npx cap copy'), 'deploy.yml must sync web assets to Android and iOS projects');
 
-console.log('✓ Native Mobile Bridge, File Export/Share Sheet, Back Button & Mobile OAuth verified');
+console.log('✓ Native Mobile Bridge, File Export/Share Sheet, Back Button, Mobile OAuth & CI Build Pipeline verified');
 
 console.log('\n========================================');
 console.log('ALL HYBRID MOBILE APP TESTS PASSED! (4/4)');

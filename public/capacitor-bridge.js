@@ -49,6 +49,16 @@
       const Share = Plugins.Share;
 
       if (Filesystem) {
+        // Also persist a copy in DOCUMENTS when supported so it appears in the device's Files app
+        try {
+          await Filesystem.writeFile({
+            path: filename,
+            data: base64Data,
+            directory: 'DOCUMENTS',
+            recursive: true
+          });
+        } catch (docErr) {}
+
         const writeResult = await Filesystem.writeFile({
           path: filename,
           data: base64Data,
@@ -172,8 +182,20 @@
       } catch (e) {}
     }
 
-    // 3. Handle Android Hardware Back Button
+    // 3. Handle Android Hardware Back Button & Deep Link OAuth Redirects (appUrlOpen)
     if (Plugins.App && typeof Plugins.App.addListener === 'function') {
+      Plugins.App.addListener('appUrlOpen', (event) => {
+        if (event && event.url && (event.url.includes('id_token=') || event.url.includes('access_token='))) {
+          const hashIdx = event.url.indexOf('#');
+          if (hashIdx !== -1) {
+            window.location.hash = event.url.substring(hashIdx);
+            if (typeof window.checkAuthStatus === 'function') {
+              window.checkAuthStatus();
+            }
+          }
+        }
+      });
+
       Plugins.App.addListener('backButton', ({ canGoBack }) => {
         // First close any active modal
         const activeModal = document.querySelector('.modal-overlay.active');

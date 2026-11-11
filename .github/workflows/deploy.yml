@@ -1,4 +1,4 @@
-name: Build & Deploy Static Song Selector SPA to GitHub Pages
+name: Build & Deploy Hybrid Mobile App (Android & iOS) & Static Web SPA
 
 on:
   push:
@@ -24,7 +24,18 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Setup Java JDK 21 for Android Hybrid Build
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
 
       - name: Build Auth Config from Git Variables & Secrets
         env:
@@ -34,9 +45,34 @@ jobs:
         run: |
           node scripts/build-auth-config.js
 
-      - name: Run Test Suites
+      - name: Sync Web Assets to Android & iOS Hybrid Projects
+        run: |
+          npx cap copy
+          npx cap update android
+
+      - name: Run All Test Suites (Backend, Static SPA, Google OAuth & Mobile Hybrid)
         run: |
           npm test
+
+      - name: Build Android Hybrid App APK (Gradle)
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SongSelector-Android-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: warn
+
+      - name: Upload iOS Hybrid Xcode Project Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SongSelector-iOS-Xcode-Project
+          path: ios/
+          if-no-files-found: warn
 
       - name: Deploy to gh-pages Branch
         uses: JamesIves/github-pages-deploy-action@v4
