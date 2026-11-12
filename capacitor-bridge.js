@@ -109,7 +109,7 @@
         </div>
         <form id="mobile-google-auth-form" style="padding: 1.25rem;">
           <p style="font-size:0.875rem; color:#475569; margin:0 0 0.85rem 0; line-height:1.5;">
-            Enter your Google account email address to sign in and verify access against <code>AUTHORIZED_EMAIL_IDS</code>:
+            Enter your Google account email address to sign in to Song Collection &amp; Lyrics Library:
           </p>
           <input
             type="email"
