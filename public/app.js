@@ -424,6 +424,17 @@ window.handleGoogleCredentialResponse = function(response) {
 function initGoogleOAuth() {
   const config = window.AUTH_CONFIG || {};
   const clientId = config.GOOGLE_CLIENT_ID;
+  const isNativeMobile = Boolean(
+    window.NativeMobileBridge &&
+    typeof window.NativeMobileBridge.isNativeApp === 'function' &&
+    window.NativeMobileBridge.isNativeApp()
+  );
+
+  // In native Android/iOS WebView (origin https://localhost), keep the native button
+  // so it triggers initiateGoogleSignIn() instead of an embedded GIS iframe that fails with origin_mismatch
+  if (isNativeMobile) {
+    return;
+  }
 
   function setupGis() {
     if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
@@ -469,6 +480,16 @@ function initGoogleOAuth() {
 window.initiateGoogleSignIn = function() {
   const config = window.AUTH_CONFIG || {};
   const clientId = config.GOOGLE_CLIENT_ID;
+  const isNativeMobile = Boolean(
+    window.NativeMobileBridge &&
+    typeof window.NativeMobileBridge.isNativeApp === 'function' &&
+    window.NativeMobileBridge.isNativeApp()
+  );
+
+  if (isNativeMobile) {
+    promptDevGoogleLogin();
+    return;
+  }
 
   if (typeof google !== 'undefined' && google.accounts && google.accounts.id && clientId) {
     google.accounts.id.prompt((notification) => {
