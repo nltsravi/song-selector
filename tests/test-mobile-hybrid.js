@@ -37,6 +37,7 @@ const buildGradleCode = fs.readFileSync(androidBuildGradlePath, 'utf8');
 assert(buildGradleCode.includes("apply plugin: 'com.github.triplet.play'"), 'android/app/build.gradle must apply com.github.triplet.play plugin');
 assert(buildGradleCode.includes('signingConfigs') && buildGradleCode.includes('release'), 'android/app/build.gradle must configure production release signingConfig for Play Store AAB');
 assert(buildGradleCode.includes('KEYSTORE_FILE') && buildGradleCode.includes('KEYSTORE_PASSWORD') && buildGradleCode.includes('KEY_ALIAS') && buildGradleCode.includes('KEY_PASSWORD'), 'android/app/build.gradle must read KEYSTORE_FILE, KEYSTORE_PASSWORD, KEY_ALIAS, and KEY_PASSWORD from environment variables');
+assert(buildGradleCode.includes('minifyEnabled true') && buildGradleCode.includes('shrinkResources true'), 'android/app/build.gradle must enable R8 minifyEnabled and shrinkResources to generate deobfuscation mapping.txt');
 assert(buildGradleCode.includes('track.set') && buildGradleCode.includes('"production"'), 'android/app/build.gradle play block must set default track to production');
 assert(buildGradleCode.includes('ReleaseStatus.DRAFT'), 'android/app/build.gradle play block must support ReleaseStatus.DRAFT for draft Play Console apps');
 assert(buildGradleCode.includes('serviceAccountCredentials.set'), 'android/app/build.gradle play block must configure serviceAccountCredentials');
@@ -90,6 +91,7 @@ const playReleaseWorkflowPath = path.join(__dirname, '../.github/workflows/play-
 assert(fs.existsSync(playReleaseWorkflowPath), '.github/workflows/play-store-release.yml must exist');
 const playReleaseYaml = fs.readFileSync(playReleaseWorkflowPath, 'utf8');
 assert(playReleaseYaml.includes("'v*'") && playReleaseYaml.includes('publishReleaseBundle'), 'play-store-release.yml must trigger on v* tags and run publishReleaseBundle');
+assert(playReleaseYaml.includes('internal alpha beta production'), 'play-store-release.yml must publish to internal, alpha (closed), beta (open), and production tracks');
 assert(indexHtml.includes('capacitor-bridge.js'), 'public/index.html must load capacitor-bridge.js');
 assert(appJs.includes('NativeMobileBridge.saveAndShareFile'), 'public/app.js must invoke NativeMobileBridge.saveAndShareFile for mobile PDF/DOCX exports');
 assert(appJs.includes('NativeMobileBridge.openMobileGoogleSignInModal'), 'public/app.js must support NativeMobileBridge.openMobileGoogleSignInModal');
