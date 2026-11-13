@@ -95,16 +95,37 @@ jobs:
           cd android
           BASE_VC=$((200 + ${{ github.run_number }} * 10 + ${{ github.run_attempt }} * 4))
 
+          SUCCESS_COUNT=0
+          FAILED_TRACKS=""
           OFFSET=1
           for TRACK in internal alpha beta production; do
             export VERSION_CODE=$((BASE_VC + OFFSET))
             export PLAY_TRACK="$TRACK"
+            rm -rf build/gpp app/build/gpp
             echo "================================================================"
             echo "Publishing R8-obfuscated AAB + mapping.txt to track: $TRACK (versionCode=$VERSION_CODE)"
             echo "================================================================"
-            ./gradlew publishReleaseBundle --track "$TRACK" --rerun
+            if ./gradlew publishReleaseBundle --track "$TRACK" --rerun --no-daemon; then
+              echo "✅ Successfully published versionCode=$VERSION_CODE to track: $TRACK"
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+            else
+              echo "::warning::Failed to publish to track '$TRACK' (check Service Account track permissions in Google Play Console -> Users and permissions)."
+              FAILED_TRACKS="$FAILED_TRACKS $TRACK"
+            fi
             OFFSET=$((OFFSET + 1))
           done
+
+          echo "================================================================"
+          echo "Play Store Publish Summary: $SUCCESS_COUNT/4 tracks succeeded."
+          if [ -n "$FAILED_TRACKS" ]; then
+            echo "Tracks skipped/failed:$FAILED_TRACKS"
+          fi
+          echo "================================================================"
+
+          if [ "$SUCCESS_COUNT" -eq 0 ]; then
+            echo "::error::All 4 Play Store tracks failed. Ensure the Service Account in Google Play Console -> Users and permissions has 'Admin (all permissions)' or all 'Releases' permissions enabled."
+            exit 1
+          fi
 
       - name: Clean Up Sensitive Credentials
         if: always()
