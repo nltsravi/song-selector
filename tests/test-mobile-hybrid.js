@@ -95,6 +95,11 @@ assert(playReleaseYaml.includes('internal alpha beta production'), 'play-store-r
 assert(indexHtml.includes('capacitor-bridge.js'), 'public/index.html must load capacitor-bridge.js');
 assert(appJs.includes('NativeMobileBridge.saveAndShareFile'), 'public/app.js must invoke NativeMobileBridge.saveAndShareFile for mobile PDF/DOCX exports');
 assert(appJs.includes('NativeMobileBridge.openMobileGoogleSignInModal'), 'public/app.js must support NativeMobileBridge.openMobileGoogleSignInModal');
+assert(appJs.includes('isEditLyricsDisabled'), 'public/app.js must disable Edit Lyrics in mobile app via isEditLyricsDisabled()');
+const stylesCss = fs.readFileSync(path.join(__dirname, '../public/styles.css'), 'utf8');
+assert(stylesCss.includes('body.capacitor-native .btn-edit-lyrics-action') && stylesCss.includes('display: none !important'), 'public/styles.css must hide Edit Lyrics button in mobile app');
+const mainActivityJava = fs.readFileSync(androidMainActivityPath, 'utf8');
+assert(mainActivityJava.includes('WindowInsetsCompat.Type.systemBars()') && mainActivityJava.includes('WindowInsetsCompat.Type.displayCutout()'), 'MainActivity.java must apply systemBars and displayCutout insets for Samsung M47 and modern Android screens');
 assert(workflowYaml.includes('bundleRelease'), 'deploy.yml must build the production Play Store AAB (bundleRelease)');
 assert(workflowYaml.includes('assembleDebug'), 'deploy.yml must build the Android hybrid APK');
 assert(workflowYaml.includes('npx cap copy'), 'deploy.yml must sync web assets to Android and iOS projects');

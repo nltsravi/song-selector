@@ -1206,7 +1206,7 @@ function renderSongs() {
             <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
             View Lyrics
           </button>
-          <button class="btn-secondary-action" onclick="openSongEditor('${escapeHtml(song.id)}')" aria-label="Edit lyrics and title for ${escapeHtml(song.title)}">
+          <button class="btn-secondary-action btn-edit-lyrics-action" onclick="openSongEditor('${escapeHtml(song.id)}')" aria-label="Edit lyrics and title for ${escapeHtml(song.title)}">
             <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
             Edit Lyrics
           </button>
@@ -2387,9 +2387,28 @@ window.resetLyricsFontSize = function() {
 };
 
 /**
+ * Check if Edit Lyrics feature is disabled (disabled in Mobile App & mobile viewports)
+ */
+function isEditLyricsDisabled() {
+  if (window.NativeMobileBridge && typeof window.NativeMobileBridge.isNativeApp === 'function' && window.NativeMobileBridge.isNativeApp()) {
+    return true;
+  }
+  if (typeof document !== 'undefined' && document.body && document.body.classList.contains('capacitor-native')) {
+    return true;
+  }
+  if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 768px)').matches) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Open Song & Lyrics Editor Modal
  */
 window.openSongEditor = function(songId) {
+  if (isEditLyricsDisabled()) {
+    return;
+  }
   const song = state.songs.find(s => s.id === songId);
   if (!song) return;
 
@@ -2442,6 +2461,9 @@ window.switchEditLyricsTab = function(lang) {
  * Strictly captures user email in Updated By
  */
 window.saveSongEdits = async function() {
+  if (isEditLyricsDisabled()) {
+    return;
+  }
   const songId = state.activeEditingSongId;
   if (!songId) return;
 
