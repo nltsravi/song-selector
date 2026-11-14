@@ -136,6 +136,52 @@ function escapeHtml(str) {
 }
 
 /**
+ * Escapes strings embedded inside inline JavaScript event handler attributes (e.g. onclick="fn('...')")
+ * Prevents DOM XSS when HTML entities are decoded by the browser prior to JS evaluation
+ */
+function escapeJsAttr(str) {
+  if (!str) return '';
+  return escapeHtml(
+    String(str)
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/"/g, '\\"')
+      .replace(/\r/g, '\\r')
+      .replace(/\n/g, '\\n')
+  );
+}
+
+/**
+ * Strict URL Sanitizer: Prevents javascript:, vbscript:, and data:text/html XSS vectors
+ */
+function sanitizeUrl(url, allowDataImage = false) {
+  if (!url) return '';
+  const trimmed = String(url).trim();
+  if (allowDataImage && /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(trimmed)) {
+    return trimmed;
+  }
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  if (/^images\/[A-Za-z0-9._/-]+$/i.test(trimmed)) {
+    return trimmed;
+  }
+  return '';
+}
+
+/**
+ * Generates a cryptographically strong random OAuth nonce
+ */
+function generateSecureNonce() {
+  if (typeof window !== 'undefined' && window.crypto && typeof window.crypto.getRandomValues === 'function') {
+    const bytes = new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  }
+  return String(Date.now()) + '-' + Math.random().toString(36).substring(2);
+}
+
+/**
  * Google Sites iframe embed responsiveness & height adapter
  */
 function checkEmbeddedMode() {
@@ -252,7 +298,10 @@ function applySongsViewMode() {
  */
 function decodeJwt(token) {
   try {
-    const base64Url = token.split('.')[1];
+    if (!token || typeof token !== 'string') return null;
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64Url = parts[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
       atob(base64)
@@ -260,7 +309,25 @@ function decodeJwt(token) {
         .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     );
-    return JSON.parse(jsonPayload);
+    const payload = JSON.parse(jsonPayload);
+    if (!payload || typeof payload !== 'object') return null;
+
+    // Validate issuer if present
+    if (payload.iss && payload.iss !== 'https://accounts.google.com' && payload.iss !== 'accounts.google.com') {
+      console.warn('Rejected JWT with untrusted issuer:', payload.iss);
+      return null;
+    }
+    // Validate token expiration if present
+    if (typeof payload.exp === 'number' && Date.now() >= payload.exp * 1000) {
+      console.warn('Rejected expired JWT token');
+      return null;
+    }
+    // Reject explicitly unverified email claims
+    if (payload.email_verified === false) {
+      console.warn('Rejected JWT with unverified email');
+      return null;
+    }
+    return payload;
   } catch (e) {
     console.error('Failed to decode JWT token:', e);
     return null;
@@ -343,8 +410,12 @@ function handleGoogleUserProfile(payload) {
     };
   }
 
-  localStorage.setItem('GOOGLE_OAUTH_USER', JSON.stringify(userObj));
-  localStorage.setItem('SIMULATED_USER', JSON.stringify(userObj));
+  if (window.NativeMobileBridge && typeof window.NativeMobileBridge.saveUserSession === 'function') {
+    window.NativeMobileBridge.saveUserSession(userObj).catch(() => {});
+  } else {
+    localStorage.setItem('GOOGLE_OAUTH_USER', JSON.stringify(userObj));
+    localStorage.setItem('SIMULATED_USER', JSON.stringify(userObj));
+  }
   state.currentUser = userObj;
 
   if (authResult.isAuthorized) {
@@ -531,7 +602,8 @@ function triggerGoogleOAuthPopup(clientId) {
     client.requestAccessToken();
   } else {
     const redirectUri = window.location.origin + window.location.pathname;
-    const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token%20id_token&scope=openid%20email%20profile&nonce=${Date.now()}`;
+    const nonce = generateSecureNonce();
+    const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token%20id_token&scope=openid%20email%20profile&nonce=${encodeURIComponent(nonce)}`;
     window.location.href = oauthUrl;
   }
 }
@@ -567,6 +639,9 @@ function promptDevGoogleLogin() {
  * Sign Out from Google Session
  */
 window.googleSignOut = function() {
+  if (window.NativeMobileBridge && typeof window.NativeMobileBridge.clearUserSession === 'function') {
+    window.NativeMobileBridge.clearUserSession().catch(() => {});
+  }
   localStorage.removeItem('GOOGLE_OAUTH_USER');
   localStorage.removeItem('SIMULATED_USER');
   if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
@@ -586,6 +661,9 @@ window.googleSignOut = function() {
  * Switch Google Account
  */
 window.googleSwitchAccount = function() {
+  if (window.NativeMobileBridge && typeof window.NativeMobileBridge.clearUserSession === 'function') {
+    window.NativeMobileBridge.clearUserSession().catch(() => {});
+  }
   localStorage.removeItem('GOOGLE_OAUTH_USER');
   localStorage.removeItem('SIMULATED_USER');
   if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
@@ -611,30 +689,40 @@ async function checkAuthentication() {
       return;
     }
 
-    // 1. Check for stored Google OAuth session
-    const storedOauth = localStorage.getItem('GOOGLE_OAUTH_USER');
-    if (storedOauth) {
-      try {
-        const oauthUser = JSON.parse(storedOauth);
-        if (oauthUser && oauthUser.isAuthenticated && oauthUser.email) {
-          const authCheck = checkEmailAuthorization(oauthUser.email, oauthUser.domain);
-          oauthUser.isDomainAllowed = authCheck.isAuthorized;
-          oauthUser.isAuthorized = authCheck.isAuthorized;
-          localStorage.setItem('SIMULATED_USER', JSON.stringify(oauthUser));
-          state.currentUser = oauthUser;
-
-          if (authCheck.isAuthorized) {
-            renderAuthenticatedState(oauthUser);
-            loadSongs();
-            loadCollections();
-            return;
-          } else {
-            renderRequestAccessState(oauthUser);
-            return;
-          }
+    // 1. Check for stored Google OAuth session (Keychain / App Sandbox on mobile, or verified web session)
+    let oauthUser = null;
+    if (window.NativeMobileBridge && typeof window.NativeMobileBridge.loadUserSession === 'function') {
+      oauthUser = await window.NativeMobileBridge.loadUserSession();
+    } else {
+      const storedOauth = localStorage.getItem('GOOGLE_OAUTH_USER');
+      if (storedOauth) {
+        try {
+          oauthUser = JSON.parse(storedOauth);
+        } catch (parseErr) {
+          localStorage.removeItem('GOOGLE_OAUTH_USER');
         }
-      } catch (parseErr) {
-        localStorage.removeItem('GOOGLE_OAUTH_USER');
+      }
+    }
+
+    if (oauthUser && oauthUser.isAuthenticated && oauthUser.email) {
+      const authCheck = checkEmailAuthorization(oauthUser.email, oauthUser.domain);
+      oauthUser.isDomainAllowed = authCheck.isAuthorized;
+      oauthUser.isAuthorized = authCheck.isAuthorized;
+      if (window.NativeMobileBridge && typeof window.NativeMobileBridge.saveUserSession === 'function') {
+        await window.NativeMobileBridge.saveUserSession(oauthUser);
+      } else {
+        localStorage.setItem('SIMULATED_USER', JSON.stringify(oauthUser));
+      }
+      state.currentUser = oauthUser;
+
+      if (authCheck.isAuthorized) {
+        renderAuthenticatedState(oauthUser);
+        loadSongs();
+        loadCollections();
+        return;
+      } else {
+        renderRequestAccessState(oauthUser);
+        return;
       }
     }
 
@@ -902,8 +990,9 @@ function renderAuthenticatedState(user) {
   const email = user.email || '';
   elements.userEmailText.textContent = email;
 
-  if (user.picture) {
-    elements.userAvatar.innerHTML = `<img src="${escapeHtml(user.picture)}" alt="Avatar" referrerpolicy="no-referrer">`;
+  const safePicUrl = sanitizeUrl(user.picture);
+  if (safePicUrl) {
+    elements.userAvatar.innerHTML = `<img src="${escapeHtml(safePicUrl)}" alt="Avatar" referrerpolicy="no-referrer">`;
   } else {
     elements.userAvatar.textContent = (user.name || email).charAt(0).toUpperCase() || 'U';
   }
@@ -1062,7 +1151,7 @@ function renderQuickTagFilters() {
   sortedTags.forEach(tag => {
     const isActive = state.selectedFilterTag && state.selectedFilterTag.toLowerCase() === tag.toLowerCase();
     html += `
-      <button class="tag-pill ${isActive ? 'active' : ''}" onclick="selectFilterTag('${escapeHtml(tag)}')">
+      <button class="tag-pill ${isActive ? 'active' : ''}" onclick="selectFilterTag('${escapeJsAttr(tag)}')">
         ${escapeHtml(tag)} <span style="opacity:0.75; font-size:0.75rem;">(${tagCounts[tag]})</span>
       </button>
     `;
@@ -1106,12 +1195,14 @@ function renderSongs() {
       `<span class="song-tag-badge">${escapeHtml(t)}</span>`
     ).join('');
 
-    const hasCustomImage = Boolean(song.imageUrl && song.imageUrl.trim());
-    const displayImg = hasCustomImage ? song.imageUrl.trim() : defaultSongImage;
+    const safeCustomImg = sanitizeUrl(song.imageUrl, true);
+    const hasCustomImage = Boolean(safeCustomImg);
+    const displayImg = hasCustomImage ? safeCustomImg : defaultSongImage;
 
-    const hasAudio = Boolean(song.audioUrl && song.audioUrl.trim());
+    const safeAudioUrl = sanitizeUrl(song.audioUrl);
+    const hasAudio = Boolean(safeAudioUrl);
     const audioBtnHtml = hasAudio
-      ? `<a href="${escapeHtml(song.audioUrl.trim())}" target="_blank" rel="noopener noreferrer" class="media-btn audio-btn enabled" title="Listen Audio: ${escapeHtml(song.audioUrl.trim())}" onclick="event.stopPropagation();" aria-label="Listen audio for ${escapeHtml(song.title)}">
+      ? `<a href="${escapeHtml(safeAudioUrl)}" target="_blank" rel="noopener noreferrer" class="media-btn audio-btn enabled" title="Listen Audio: ${escapeHtml(safeAudioUrl)}" onclick="event.stopPropagation();" aria-label="Listen audio for ${escapeHtml(song.title)}">
           <svg class="media-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M9 18V5l12-2v13"></path>
             <circle cx="6" cy="18" r="3"></circle>
@@ -1128,9 +1219,10 @@ function renderSongs() {
           <span>Audio</span>
         </span>`;
 
-    const hasVideo = Boolean(song.videoUrl && song.videoUrl.trim());
+    const safeVideoUrl = sanitizeUrl(song.videoUrl);
+    const hasVideo = Boolean(safeVideoUrl);
     const videoBtnHtml = hasVideo
-      ? `<a href="${escapeHtml(song.videoUrl.trim())}" target="_blank" rel="noopener noreferrer" class="media-btn video-btn enabled" title="Watch Video: ${escapeHtml(song.videoUrl.trim())}" onclick="event.stopPropagation();" aria-label="Watch video for ${escapeHtml(song.title)}">
+      ? `<a href="${escapeHtml(safeVideoUrl)}" target="_blank" rel="noopener noreferrer" class="media-btn video-btn enabled" title="Watch Video: ${escapeHtml(safeVideoUrl)}" onclick="event.stopPropagation();" aria-label="Watch video for ${escapeHtml(song.title)}">
           <svg class="media-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <rect x="2" y="4" width="15" height="16" rx="2" ry="2"></rect>
             <polygon points="17 8 22 12 17 16 17 8"></polygon>
@@ -1160,7 +1252,7 @@ function renderSongs() {
         <div class="song-card-body">
           <div class="song-header-row">
             <label class="custom-checkbox-label" title="Select song" aria-label="Select song ${escapeHtml(song.title)}">
-              <input type="checkbox" class="custom-checkbox-input" id="check-${escapeHtml(song.id)}" ${isSelected ? 'checked' : ''} onchange="toggleSongSelection('${escapeHtml(song.id)}')" aria-label="Select song ${escapeHtml(song.title)}">
+              <input type="checkbox" class="custom-checkbox-input" id="check-${escapeHtml(song.id)}" ${isSelected ? 'checked' : ''} onchange="toggleSongSelection('${escapeJsAttr(song.id)}')" aria-label="Select song ${escapeHtml(song.title)}">
               <span class="custom-checkbox-box" aria-hidden="true">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
               </span>
@@ -1194,7 +1286,7 @@ function renderSongs() {
 
           <div class="song-tags-container" role="group" aria-label="Tags for ${escapeHtml(song.title)}">
             ${tagBadges}
-            <button class="btn-add-tag-inline" onclick="openTagEditor('${escapeHtml(song.id)}')" title="Edit tags" aria-label="Add or edit tags for ${escapeHtml(song.title)}">
+            <button class="btn-add-tag-inline" onclick="openTagEditor('${escapeJsAttr(song.id)}')" title="Edit tags" aria-label="Add or edit tags for ${escapeHtml(song.title)}">
               <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
               + Tags
             </button>
@@ -1202,15 +1294,15 @@ function renderSongs() {
         </div>
 
         <div class="song-card-actions">
-          <button class="btn-secondary-action" onclick="openLyricsPreview('${escapeHtml(song.id)}')" aria-label="View lyrics for ${escapeHtml(song.title)}">
+          <button class="btn-secondary-action" onclick="openLyricsPreview('${escapeJsAttr(song.id)}')" aria-label="View lyrics for ${escapeHtml(song.title)}">
             <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
             View Lyrics
           </button>
-          <button class="btn-secondary-action btn-edit-lyrics-action" onclick="openSongEditor('${escapeHtml(song.id)}')" aria-label="Edit lyrics and title for ${escapeHtml(song.title)}">
+          <button class="btn-secondary-action btn-edit-lyrics-action" onclick="openSongEditor('${escapeJsAttr(song.id)}')" aria-label="Edit lyrics and title for ${escapeHtml(song.title)}">
             <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
             Edit Lyrics
           </button>
-          <button class="btn-secondary-action" onclick="openTagEditor('${escapeHtml(song.id)}')" aria-label="Edit tags for ${escapeHtml(song.title)}">
+          <button class="btn-secondary-action" onclick="openTagEditor('${escapeJsAttr(song.id)}')" aria-label="Edit tags for ${escapeHtml(song.title)}">
             <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
             Edit Tags
           </button>
@@ -1633,13 +1725,13 @@ function renderCollections() {
         </div>
 
         <div class="collection-card-actions">
-          <button class="btn-secondary-action" onclick="openCollectionDetails('${escapeHtml(col.collectionId)}')" style="flex:1;">
+          <button class="btn-secondary-action" onclick="openCollectionDetails('${escapeJsAttr(col.collectionId)}')" style="flex:1;">
             Open Collection
           </button>
-          <button class="btn-primary-action" onclick="openExportModal('${escapeHtml(col.collectionId)}')" style="padding:0.5rem 0.85rem;">
+          <button class="btn-primary-action" onclick="openExportModal('${escapeJsAttr(col.collectionId)}')" style="padding:0.5rem 0.85rem;">
             Export
           </button>
-          <button class="btn-danger-action" onclick="confirmDeleteCollection('${escapeHtml(col.collectionId)}', '${escapeHtml(col.name)}')" title="Delete collection" aria-label="Delete collection ${escapeHtml(col.name)}">
+          <button class="btn-danger-action" onclick="confirmDeleteCollection('${escapeJsAttr(col.collectionId)}', '${escapeJsAttr(col.name)}')" title="Delete collection" aria-label="Delete collection ${escapeHtml(col.name)}">
             <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
           </button>
         </div>

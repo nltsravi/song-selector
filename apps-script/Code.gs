@@ -217,6 +217,7 @@ function apiExportCollection(collectionId, language, format, skipMissing) {
  */
 function apiSetupSheetStructure() {
   try {
+    AuthService.requireAuthUserEmail();
     var spreadsheet = ConfigService.getSpreadsheet();
 
     // 1. Songs sheet

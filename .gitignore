@@ -27,3 +27,11 @@ Thumbs.db
 
 # Xcode archive directory
 *.xcarchive/
+
+# Android / Google Play Signing Keys & Service Account Credentials
+*.jks
+*.keystore
+keystore.properties
+play-service-account.json
+google-services.json
+GoogleService-Info.plist

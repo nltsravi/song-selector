@@ -4,6 +4,12 @@
  */
 
 function populateSampleSongsAndStructure() {
+  AuthService.requireAuthUserEmail();
+  var activeEmail = (Session.getActiveUser().getEmail() || '').toLowerCase().trim();
+  var effectiveEmail = (Session.getEffectiveUser().getEmail() || '').toLowerCase().trim();
+  if (activeEmail && effectiveEmail && activeEmail !== effectiveEmail) {
+    throw new Error('FORBIDDEN: Only the spreadsheet owner/administrator can initialize or reset sheet structures.');
+  }
   var spreadsheet = ConfigService.getSpreadsheet();
 
   // 1. Setup Songs Sheet

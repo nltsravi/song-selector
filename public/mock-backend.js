@@ -280,6 +280,27 @@
 
   function getActiveUser() {
     try {
+      // 1. Check Native Keychain / App Sandbox in-memory session first
+      if (
+        typeof window !== 'undefined' &&
+        window.NativeMobileBridge &&
+        typeof window.NativeMobileBridge.getActiveSessionUser === 'function'
+      ) {
+        const secureUser = window.NativeMobileBridge.getActiveSessionUser();
+        if (secureUser && secureUser.isAuthenticated && secureUser.email) {
+          activeSimulatedUser = {
+            isAuthenticated: true,
+            email: secureUser.email,
+            name: secureUser.name || secureUser.email.split('@')[0],
+            domain: secureUser.domain || secureUser.email.split('@')[1] || '',
+            isDomainAllowed: secureUser.isDomainAllowed !== false,
+            error: secureUser.error || null
+          };
+          return activeSimulatedUser;
+        }
+      }
+
+      // 2. Fallback to web session storage
       const oauthRaw = localStorage.getItem('GOOGLE_OAUTH_USER');
       if (oauthRaw) {
         const oauthUser = JSON.parse(oauthRaw);
@@ -478,6 +499,9 @@
     },
 
     apiGetSong: function(songId) {
+      if (!activeSimulatedUser.isAuthenticated) {
+        throw new Error('UNAUTHORIZED: Authentication required.');
+      }
       const songs = getStoredSongs();
       return songs.find(s => s.id === songId) || null;
     },
@@ -1403,6 +1427,18 @@
       const headerLogoBase64 = typeof LOGO_HEADER_BASE64 !== 'undefined' ? LOGO_HEADER_BASE64 : (typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : '');
       const watermarkBase64 = typeof LOGO_IMAGE_WATERMARK_BASE64 !== 'undefined' ? LOGO_IMAGE_WATERMARK_BASE64 : (typeof LOGO_IMAGE_BASE64 !== 'undefined' ? LOGO_IMAGE_BASE64 : '');
 
+      function escapeHtmlStr(str) {
+        return String(str == null ? '' : str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      const rawColName = col.name;
+      col.name = escapeHtmlStr(rawColName);
+
       // HTML document structure with header logo, center watermark, cover page, and footer structure
       const htmlDoc = `
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -1473,7 +1509,7 @@
 
           <!-- Subsequent Pages: Songs -->
           ${exportedSongsData.map((s) => {
-            return `<div class="song-entry" style="page-break-inside: avoid; margin-bottom: 24px;"><h2>${s.title}</h2><div class="lyrics">${s.lyrics.replace(/\n/g, '<br>')}</div></div>`;
+            return `<div class="song-entry" style="page-break-inside: avoid; margin-bottom: 24px;"><h2>${escapeHtmlStr(s.title)}</h2><div class="lyrics">${escapeHtmlStr(s.lyrics).replace(/\n/g, '<br>')}</div></div>`;
           }).join('')}
 
           <!-- Subsequent Page Footer: Page number starting from 1 -->
@@ -1485,6 +1521,7 @@
           </table>
         </body></html>
       `;
+      col.name = rawColName;
 
       let base64Data = '';
 

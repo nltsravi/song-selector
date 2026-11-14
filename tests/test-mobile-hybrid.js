@@ -100,6 +100,27 @@ const stylesCss = fs.readFileSync(path.join(__dirname, '../public/styles.css'), 
 assert(stylesCss.includes('body.capacitor-native .btn-edit-lyrics-action') && stylesCss.includes('display: none !important'), 'public/styles.css must hide Edit Lyrics button in mobile app');
 const mainActivityJava = fs.readFileSync(androidMainActivityPath, 'utf8');
 assert(mainActivityJava.includes('WindowInsetsCompat.Type.systemBars()') && mainActivityJava.includes('WindowInsetsCompat.Type.displayCutout()'), 'MainActivity.java must apply systemBars and displayCutout insets for Samsung M47 and modern Android screens');
+assert(mainActivityJava.includes('registerPlugin(SecureSessionPlugin.class)'), 'MainActivity.java must register SecureSessionPlugin');
+
+// Verify Android Hardware Keystore + NoBackup Sandbox Plugin & Data Extraction Rules
+const androidSecurePluginPath = path.join(androidDir, 'app/src/main/java/com/neolumina/songselector/SecureSessionPlugin.java');
+assert(fs.existsSync(androidSecurePluginPath), 'Android SecureSessionPlugin.java must exist');
+const androidSecurePluginJava = fs.readFileSync(androidSecurePluginPath, 'utf8');
+assert(androidSecurePluginJava.includes('AndroidKeyStore') && androidSecurePluginJava.includes('AES/GCM/NoPadding'), 'SecureSessionPlugin.java must use hardware-backed AndroidKeyStore with AES/GCM/NoPadding');
+assert(androidSecurePluginJava.includes('getNoBackupFilesDir()'), 'SecureSessionPlugin.java must store encrypted session vault inside getNoBackupFilesDir() app sandbox');
+assert(manifestXml.includes('android:allowBackup="false"') && manifestXml.includes('android:dataExtractionRules="@xml/data_extraction_rules"'), 'AndroidManifest.xml must disable backup and enforce data_extraction_rules');
+
+// Verify iOS Keychain (ThisDeviceOnly) Plugin
+const iosSecurePluginPath = path.join(iosDir, 'App/App/SecureSessionPlugin.swift');
+assert(fs.existsSync(iosSecurePluginPath), 'iOS SecureSessionPlugin.swift must exist');
+const iosSecurePluginSwift = fs.readFileSync(iosSecurePluginPath, 'utf8');
+assert(iosSecurePluginSwift.includes('kSecAttrAccessibleWhenUnlockedThisDeviceOnly'), 'SecureSessionPlugin.swift must bind Keychain items to ThisDeviceOnly to prevent cloning');
+assert(iosSecurePluginSwift.includes('identifierForVendor'), 'SecureSessionPlugin.swift must bind session payload to UIDevice.current.identifierForVendor');
+
+// Verify Bridge & App Session Integration
+assert(bridgeCode.includes('saveUserSession') && bridgeCode.includes('loadUserSession') && bridgeCode.includes('clearUserSession'), 'capacitor-bridge.js must implement Keychain/Sandbox session vault methods');
+assert(bridgeCode.includes('AES-GCM') && bridgeCode.includes('SecureSession'), 'capacitor-bridge.js must integrate native SecureSession and WebCrypto AES-GCM sandbox encryption');
+assert(appJs.includes('NativeMobileBridge.saveUserSession') && appJs.includes('NativeMobileBridge.loadUserSession'), 'public/app.js must persist and load user sessions via NativeMobileBridge');
 assert(workflowYaml.includes('bundleRelease'), 'deploy.yml must build the production Play Store AAB (bundleRelease)');
 assert(workflowYaml.includes('assembleDebug'), 'deploy.yml must build the Android hybrid APK');
 assert(workflowYaml.includes('npx cap copy'), 'deploy.yml must sync web assets to Android and iOS projects');

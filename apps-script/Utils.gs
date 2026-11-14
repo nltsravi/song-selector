@@ -127,5 +127,30 @@ var SanitizeHelper = {
       .replace(/_+/g, '_')
       .replace(/^_+|_+$/g, '');
     return clean || 'Collection';
+  },
+
+  /**
+   * Prevents Spreadsheet / CSV Formula Injection (CWE-1236)
+   * Neutralizes strings starting with =, +, -, @, tab, or carriage return
+   */
+  sanitizeSheetInput: function(value) {
+    if (value === null || value === undefined) return '';
+    var str = value.toString();
+    if (/^[=+\-@\t\r]/.test(str)) {
+      return "'" + str;
+    }
+    return str;
+  },
+
+  /**
+   * Validates URLs to allow only safe http:// or https:// protocols
+   */
+  sanitizeUrl: function(url) {
+    if (!url) return '';
+    var trimmed = url.toString().trim();
+    if (/^https?:\/\//i.test(trimmed)) {
+      return trimmed;
+    }
+    return '';
   }
 };

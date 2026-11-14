@@ -170,7 +170,7 @@ var AuthService = {
     var requestId = 'REQ-' + Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyyMMdd-HHmmss');
     var dateStr = DateHelper.getFormattedDate();
     var timestampStr = DateHelper.getFormattedTimestamp();
-    var cleanReason = (reason || '').toString().trim();
+    var cleanReason = SanitizeHelper.sanitizeSheetInput((reason || '').toString().trim().substring(0, 300));
 
     if (existingRow > 0) {
       sheet.getRange(existingRow, 3).setValue(dateStr);

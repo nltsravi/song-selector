@@ -56,11 +56,22 @@ self.addEventListener('fetch', (event) => {
   // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
+  // Security: Only intercept http/https requests and never cache OAuth userinfo or token endpoints
+  let reqUrl;
+  try {
+    reqUrl = new URL(event.request.url);
+    if (reqUrl.protocol !== 'http:' && reqUrl.protocol !== 'https:') return;
+    if (reqUrl.hostname.includes('googleapis.com') && reqUrl.pathname.includes('/oauth2/')) return;
+    if (reqUrl.hostname.includes('accounts.google.com')) return;
+  } catch (e) {
+    return;
+  }
+
   // Network-First: Always attempt to fetch from network first so updates are delivered immediately
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);

@@ -3,8 +3,8 @@
 # min_api: 24
 # common_typos_disable
 # {"id":"com.android.tools.r8.mapping","version":"2.2"}
-# pg_map_id: df07f7c0381d3d36ac9adc1b24807a5e9054644bf15df3c668902fe12cb0f39e
-# pg_map_hash: SHA-256 df07f7c0381d3d36ac9adc1b24807a5e9054644bf15df3c668902fe12cb0f39e
+# pg_map_id: c5d9d521a498f2373505f31ab0de089ee8ca9657719f0c5e9c63de2f8bbfccdf
+# pg_map_hash: SHA-256 c5d9d521a498f2373505f31ab0de089ee8ca9657719f0c5e9c63de2f8bbfccdf
 _COROUTINE.ArtificialStackFrames -> R8$$REMOVED$$CLASS$$0:
 # {"id":"sourceFile","fileName":"CoroutineDebugging.kt"}
 _COROUTINE.CoroutineDebuggingKt -> R8$$REMOVED$$CLASS$$1:
@@ -52883,18 +52883,145 @@ com.neolumina.songselector.MainActivity -> com.neolumina.songselector.MainActivi
       # {"id":"com.android.tools.r8.synthesized"}
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/view/View;Lf0/o1;)Lf0/o1;"}
     3:4:androidx.core.graphics.Insets androidx.core.view.WindowInsetsCompat.getInsets(int):667:667 -> lambda$onCreate$0
-    3:4:androidx.core.view.WindowInsetsCompat lambda$onCreate$0(android.view.View,androidx.core.view.WindowInsetsCompat):20 -> lambda$onCreate$0
+    3:4:androidx.core.view.WindowInsetsCompat lambda$onCreate$0(android.view.View,androidx.core.view.WindowInsetsCompat):21 -> lambda$onCreate$0
       # {"id":"com.android.tools.r8.rewriteFrame","conditions":["throws(Ljava/lang/NullPointerException;)"],"actions":["removeInnerFrames(1)"]}
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/view/View;Lf0/o1;)Lf0/o1;"}
     5:8:androidx.core.graphics.Insets androidx.core.view.WindowInsetsCompat.getInsets(int):667:667 -> lambda$onCreate$0
-    5:8:androidx.core.view.WindowInsetsCompat lambda$onCreate$0(android.view.View,androidx.core.view.WindowInsetsCompat):20 -> lambda$onCreate$0
-    9:19:androidx.core.view.WindowInsetsCompat lambda$onCreate$0(android.view.View,androidx.core.view.WindowInsetsCompat):23:23 -> lambda$onCreate$0
-    20:22:androidx.core.view.WindowInsetsCompat lambda$onCreate$0(android.view.View,androidx.core.view.WindowInsetsCompat):24:24 -> lambda$onCreate$0
-    1:6:void onCreate(android.os.Bundle):13:13 -> onCreate
-    7:12:void onCreate(android.os.Bundle):17:17 -> onCreate
-    13:19:void onCreate(android.os.Bundle):19:19 -> onCreate
-    20:23:void androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(android.view.View,androidx.core.view.OnApplyWindowInsetsListener):2973:2973 -> onCreate
-    20:23:void onCreate(android.os.Bundle):19 -> onCreate
+    5:8:androidx.core.view.WindowInsetsCompat lambda$onCreate$0(android.view.View,androidx.core.view.WindowInsetsCompat):21 -> lambda$onCreate$0
+    9:19:androidx.core.view.WindowInsetsCompat lambda$onCreate$0(android.view.View,androidx.core.view.WindowInsetsCompat):24:24 -> lambda$onCreate$0
+    20:22:androidx.core.view.WindowInsetsCompat lambda$onCreate$0(android.view.View,androidx.core.view.WindowInsetsCompat):25:25 -> lambda$onCreate$0
+    1:5:void onCreate(android.os.Bundle):13:13 -> onCreate
+    6:11:void onCreate(android.os.Bundle):14:14 -> onCreate
+    12:17:void onCreate(android.os.Bundle):18:18 -> onCreate
+    18:24:void onCreate(android.os.Bundle):20:20 -> onCreate
+    25:28:void androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(android.view.View,androidx.core.view.OnApplyWindowInsetsListener):2973:2973 -> onCreate
+    25:28:void onCreate(android.os.Bundle):20 -> onCreate
+com.neolumina.songselector.SecureSessionPlugin -> com.neolumina.songselector.SecureSessionPlugin:
+# {"id":"sourceFile","fileName":"SecureSessionPlugin.java"}
+    1:4:void <init>():45:45 -> <init>
+    1:4:void clear(com.getcapacitor.PluginCall):266:266 -> clear
+    5:10:void clear(com.getcapacitor.PluginCall):267:267 -> clear
+    11:16:void clear(com.getcapacitor.PluginCall):268:268 -> clear
+    17:21:void clear(com.getcapacitor.PluginCall):270:270 -> clear
+    22:27:void clear(com.getcapacitor.PluginCall):271:271 -> clear
+    28:31:void clear(com.getcapacitor.PluginCall):272:272 -> clear
+    32:37:void clear(com.getcapacitor.PluginCall):274:274 -> clear
+    3:11:java.lang.String decryptValue(java.lang.String):138:138 -> decryptValue
+    12:16:java.lang.String decryptValue(java.lang.String):141:141 -> decryptValue
+    17:23:java.lang.String decryptValue(java.lang.String):142:142 -> decryptValue
+    24:29:java.lang.String decryptValue(java.lang.String):143:143 -> decryptValue
+    30:33:java.lang.String decryptValue(java.lang.String):145:145 -> decryptValue
+    34:39:java.lang.String decryptValue(java.lang.String):146:146 -> decryptValue
+    40:46:java.lang.String decryptValue(java.lang.String):147:147 -> decryptValue
+    47:49:java.lang.String decryptValue(java.lang.String):148:148 -> decryptValue
+    50:56:java.lang.String decryptValue(java.lang.String):149:149 -> decryptValue
+    57:60:java.lang.String decryptValue(java.lang.String):150:150 -> decryptValue
+    61:68:java.lang.String decryptValue(java.lang.String):151:151 -> decryptValue
+    69:76:java.lang.String decryptValue(java.lang.String):139:139 -> decryptValue
+    1:4:java.lang.String encryptValue(java.lang.String):125:125 -> encryptValue
+    5:11:java.lang.String encryptValue(java.lang.String):126:126 -> encryptValue
+    12:14:java.lang.String encryptValue(java.lang.String):127:127 -> encryptValue
+    15:18:java.lang.String encryptValue(java.lang.String):128:128 -> encryptValue
+    19:25:java.lang.String encryptValue(java.lang.String):129:129 -> encryptValue
+    26:36:java.lang.String encryptValue(java.lang.String):130:130 -> encryptValue
+    37:40:java.lang.String encryptValue(java.lang.String):132:132 -> encryptValue
+    41:44:java.lang.String encryptValue(java.lang.String):133:133 -> encryptValue
+    45:65:java.lang.String encryptValue(java.lang.String):134:134 -> encryptValue
+    1:4:byte[] getDeviceBindingAad():110:110 -> getDeviceBindingAad
+    5:10:byte[] getDeviceBindingAad():112:112 -> getDeviceBindingAad
+    11:16:byte[] getDeviceBindingAad():111:111 -> getDeviceBindingAad
+    17:18:byte[] getDeviceBindingAad():116:116 -> getDeviceBindingAad
+    19:22:byte[] getDeviceBindingAad():118:118 -> getDeviceBindingAad
+    23:26:byte[] getDeviceBindingAad():119:119 -> getDeviceBindingAad
+    27:52:byte[] getDeviceBindingAad():120:120 -> getDeviceBindingAad
+    53:59:byte[] getDeviceBindingAad():121:121 -> getDeviceBindingAad
+    1:8:void getItem(com.getcapacitor.PluginCall):228:228 -> getItem
+    9:19:void getItem(com.getcapacitor.PluginCall):229:229 -> getItem
+    20:23:void getItem(com.getcapacitor.PluginCall):234:234 -> getItem
+    24:37:void getItem(com.getcapacitor.PluginCall):235:235 -> getItem
+    38:42:void getItem(com.getcapacitor.PluginCall):236:236 -> getItem
+    43:47:void getItem(com.getcapacitor.PluginCall):237:237 -> getItem
+    48:51:void getItem(com.getcapacitor.PluginCall):238:238 -> getItem
+    52:57:void getItem(com.getcapacitor.PluginCall):240:240 -> getItem
+    58:63:void getItem(com.getcapacitor.PluginCall):230:230 -> getItem
+    2:8:javax.crypto.SecretKey getOrCreateHardwareKey():55:55 -> getOrCreateHardwareKey
+    9:11:javax.crypto.SecretKey getOrCreateHardwareKey():56:56 -> getOrCreateHardwareKey
+    12:19:javax.crypto.SecretKey getOrCreateHardwareKey():58:58 -> getOrCreateHardwareKey
+    20:25:javax.crypto.SecretKey getOrCreateHardwareKey():59:59 -> getOrCreateHardwareKey
+    26:29:javax.crypto.SecretKey getOrCreateHardwareKey():60:60 -> getOrCreateHardwareKey
+    30:39:javax.crypto.SecretKey getOrCreateHardwareKey():61:61 -> getOrCreateHardwareKey
+    40:47:javax.crypto.SecretKey getOrCreateHardwareKey():65:65 -> getOrCreateHardwareKey
+    48:61:javax.crypto.SecretKey getOrCreateHardwareKey():70:70 -> getOrCreateHardwareKey
+    62:71:javax.crypto.SecretKey getOrCreateHardwareKey():74:74 -> getOrCreateHardwareKey
+    72:77:javax.crypto.SecretKey getOrCreateHardwareKey():75:75 -> getOrCreateHardwareKey
+    78:82:javax.crypto.SecretKey getOrCreateHardwareKey():76:76 -> getOrCreateHardwareKey
+    83:87:javax.crypto.SecretKey getOrCreateHardwareKey():77:77 -> getOrCreateHardwareKey
+    88:90:javax.crypto.SecretKey getOrCreateHardwareKey():80:80 -> getOrCreateHardwareKey
+    91:97:javax.crypto.SecretKey getOrCreateHardwareKey():83:83 -> getOrCreateHardwareKey
+    98:105:javax.crypto.SecretKey getOrCreateHardwareKey():84:84 -> getOrCreateHardwareKey
+    1:4:java.lang.String getOrCreateInstallSalt():94:94 -> getOrCreateInstallSalt
+    5:15:java.lang.String getOrCreateInstallSalt():95:95 -> getOrCreateInstallSalt
+    16:21:java.lang.String getOrCreateInstallSalt():96:96 -> getOrCreateInstallSalt
+    22:25:java.lang.String getOrCreateInstallSalt():97:97 -> getOrCreateInstallSalt
+    26:28:java.lang.String getOrCreateInstallSalt():98:98 -> getOrCreateInstallSalt
+    29:42:java.lang.String getOrCreateInstallSalt():99:99 -> getOrCreateInstallSalt
+    43:44:java.lang.String getOrCreateInstallSalt():102:102 -> getOrCreateInstallSalt
+    45:53:java.lang.String getOrCreateInstallSalt():103:103 -> getOrCreateInstallSalt
+    54:57:java.lang.String getOrCreateInstallSalt():104:104 -> getOrCreateInstallSalt
+    58:67:java.lang.String getOrCreateInstallSalt():105:105 -> getOrCreateInstallSalt
+    1:4:java.io.File getVaultFile():88:88 -> getVaultFile
+    5:8:java.io.File getVaultFile():89:89 -> getVaultFile
+    9:16:java.io.File getVaultFile():90:90 -> getVaultFile
+    2:5:org.json.JSONObject loadVaultJson():155:155 -> loadVaultJson
+    6:11:org.json.JSONObject loadVaultJson():156:156 -> loadVaultJson
+    12:20:org.json.JSONObject loadVaultJson():157:157 -> loadVaultJson
+    21:24:org.json.JSONObject loadVaultJson():160:160 -> loadVaultJson
+    25:27:org.json.JSONObject loadVaultJson():161:161 -> loadVaultJson
+    28:34:org.json.JSONObject loadVaultJson():162:162 -> loadVaultJson
+    35:45:org.json.JSONObject loadVaultJson():164:164 -> loadVaultJson
+    46:52:org.json.JSONObject loadVaultJson():165:165 -> loadVaultJson
+    53:55:org.json.JSONObject loadVaultJson():168:168 -> loadVaultJson
+    56:64:org.json.JSONObject loadVaultJson():169:169 -> loadVaultJson
+    1:5:byte[] readAllBytes(java.io.File):180:180 -> readAllBytes
+    6:17:byte[] readAllBytes(java.io.File):181:181 -> readAllBytes
+    18:28:byte[] readAllBytes(java.io.File):184:184 -> readAllBytes
+    29:32:byte[] readAllBytes(java.io.File):188:188 -> readAllBytes
+    33:41:byte[] readAllBytes(java.io.File):180:180 -> readAllBytes
+    1:8:void removeItem(com.getcapacitor.PluginCall):246:246 -> removeItem
+    9:19:void removeItem(com.getcapacitor.PluginCall):247:247 -> removeItem
+    20:23:void removeItem(com.getcapacitor.PluginCall):252:252 -> removeItem
+    24:26:void removeItem(com.getcapacitor.PluginCall):253:253 -> removeItem
+    27:29:void removeItem(com.getcapacitor.PluginCall):254:254 -> removeItem
+    30:34:void removeItem(com.getcapacitor.PluginCall):255:255 -> removeItem
+    35:40:void removeItem(com.getcapacitor.PluginCall):256:256 -> removeItem
+    41:45:void removeItem(com.getcapacitor.PluginCall):257:257 -> removeItem
+    46:51:void removeItem(com.getcapacitor.PluginCall):259:259 -> removeItem
+    52:57:void removeItem(com.getcapacitor.PluginCall):248:248 -> removeItem
+    2:5:void saveVaultJson(org.json.JSONObject):174:174 -> saveVaultJson
+    6:13:void saveVaultJson(org.json.JSONObject):175:175 -> saveVaultJson
+    14:22:void saveVaultJson(org.json.JSONObject):176:176 -> saveVaultJson
+    23:27:void saveVaultJson(org.json.JSONObject):177:177 -> saveVaultJson
+    1:6:void setItem(com.getcapacitor.PluginCall):204:204 -> setItem
+    7:14:void setItem(com.getcapacitor.PluginCall):205:205 -> setItem
+    15:25:void setItem(com.getcapacitor.PluginCall):206:206 -> setItem
+    26:31:void setItem(com.getcapacitor.PluginCall):211:211 -> setItem
+    32:37:void setItem(com.getcapacitor.PluginCall):213:213 -> setItem
+    38:40:void setItem(com.getcapacitor.PluginCall):215:215 -> setItem
+    41:43:void setItem(com.getcapacitor.PluginCall):217:217 -> setItem
+    44:48:void setItem(com.getcapacitor.PluginCall):218:218 -> setItem
+    49:54:void setItem(com.getcapacitor.PluginCall):219:219 -> setItem
+    55:58:void setItem(com.getcapacitor.PluginCall):220:220 -> setItem
+    59:64:void setItem(com.getcapacitor.PluginCall):222:222 -> setItem
+    65:70:void setItem(com.getcapacitor.PluginCall):207:207 -> setItem
+    1:6:void writePrivateFile(java.io.File,byte[]):192:192 -> writePrivateFile
+    7:9:void writePrivateFile(java.io.File,byte[]):193:193 -> writePrivateFile
+    10:12:void writePrivateFile(java.io.File,byte[]):194:194 -> writePrivateFile
+    13:15:void writePrivateFile(java.io.File,byte[]):195:195 -> writePrivateFile
+    16:19:void writePrivateFile(java.io.File,byte[]):196:196 -> writePrivateFile
+    20:22:void writePrivateFile(java.io.File,byte[]):197:197 -> writePrivateFile
+    23:25:void writePrivateFile(java.io.File,byte[]):198:198 -> writePrivateFile
+    26:30:void writePrivateFile(java.io.File,byte[]):199:199 -> writePrivateFile
+    31:39:void writePrivateFile(java.io.File,byte[]):192:192 -> writePrivateFile
 io.ionic.libs.ionfilesystemlib.IONFILEController -> e1.k:
 # {"id":"sourceFile","fileName":"IONFILEController.kt"}
     io.ionic.libs.ionfilesystemlib.helper.IONFILEUriHelper uriHelper -> a

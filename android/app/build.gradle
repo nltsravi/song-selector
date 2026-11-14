@@ -16,8 +16,8 @@ android {
         applicationId "com.neolumina.songselector"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode System.getenv("VERSION_CODE") ? System.getenv("VERSION_CODE").toInteger() : 200
-        versionName System.getenv("VERSION_NAME") ?: "1.0.4"
+        versionCode System.getenv("VERSION_CODE") ? System.getenv("VERSION_CODE").toInteger() : 210
+        versionName System.getenv("VERSION_NAME") ?: "1.0.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

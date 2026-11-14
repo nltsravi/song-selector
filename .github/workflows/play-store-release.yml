@@ -67,7 +67,7 @@ jobs:
           PLAY_RELEASE_STATUS: ${{ vars.PLAY_RELEASE_STATUS || 'draft' }}
           VERSION_NAME: ${{ github.ref_name }}
         run: |
-          export VERSION_CODE=$((200 + ${{ github.run_number }} * 10 + ${{ github.run_attempt }} * 4))
+          export VERSION_CODE=$((300 + ${{ github.run_number }} * 10 + ${{ github.run_attempt }} * 4))
           cd android
           chmod +x gradlew
           ./gradlew bundleRelease
@@ -93,7 +93,7 @@ jobs:
           VERSION_NAME: ${{ github.ref_name }}
         run: |
           cd android
-          BASE_VC=$((200 + ${{ github.run_number }} * 10 + ${{ github.run_attempt }} * 4))
+          BASE_VC=$((300 + ${{ github.run_number }} * 10 + ${{ github.run_attempt }} * 4))
 
           SUCCESS_COUNT=0
           FAILED_TRACKS=""

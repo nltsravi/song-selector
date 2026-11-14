@@ -10,6 +10,7 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(SecureSessionPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Ensure proper alignment on Samsung Galaxy M47 and all Android 14/15/16 devices

@@ -140,11 +140,11 @@ var SongService = {
       var englishLyrics = (row[colEnglish] || '').toString().trim();
       var devanagariLyrics = (row[colDevanagari] || '').toString().trim();
 
-      var imageUrl = colImageUrl >= 0 ? (row[colImageUrl] || '').toString().trim() : '';
-      var audioUrl = colAudioUrl >= 0 ? (row[colAudioUrl] || '').toString().trim() : '';
-      var videoUrl = colVideoUrl >= 0 ? (row[colVideoUrl] || '').toString().trim() : '';
+      var imageUrl = colImageUrl >= 0 ? SanitizeHelper.sanitizeUrl(row[colImageUrl]) : '';
+      var audioUrl = colAudioUrl >= 0 ? SanitizeHelper.sanitizeUrl(row[colAudioUrl]) : '';
+      var videoUrl = colVideoUrl >= 0 ? SanitizeHelper.sanitizeUrl(row[colVideoUrl]) : '';
       if (!audioUrl && colMediaUrl >= 0) {
-        audioUrl = (row[colMediaUrl] || '').toString().trim();
+        audioUrl = SanitizeHelper.sanitizeUrl(row[colMediaUrl]);
       }
 
       songs.push({
@@ -247,7 +247,7 @@ var SongService = {
       }
 
       // Update ONLY the Tags column, Updated At, and Updated By cells (Section 9)
-      sheet.getRange(targetRow, tagsColIdx).setValue(normalizedTags);
+      sheet.getRange(targetRow, tagsColIdx).setValue(SanitizeHelper.sanitizeSheetInput(normalizedTags));
 
       if (updatedAtColIdx) {
         sheet.getRange(targetRow, updatedAtColIdx).setValue(timestamp);
@@ -393,25 +393,25 @@ var SongService = {
       }
 
       if (titleColIdx && combinedTitle) {
-        sheet.getRange(targetRow, titleColIdx).setValue(combinedTitle);
+        sheet.getRange(targetRow, titleColIdx).setValue(SanitizeHelper.sanitizeSheetInput(combinedTitle));
       }
       if (englishTitleColIdx && songData.englishTitle !== undefined) {
-        sheet.getRange(targetRow, englishTitleColIdx).setValue(englishTitle);
+        sheet.getRange(targetRow, englishTitleColIdx).setValue(SanitizeHelper.sanitizeSheetInput(englishTitle));
       }
       if (tamilTitleColIdx && songData.tamilTitle !== undefined) {
-        sheet.getRange(targetRow, tamilTitleColIdx).setValue(tamilTitle);
+        sheet.getRange(targetRow, tamilTitleColIdx).setValue(SanitizeHelper.sanitizeSheetInput(tamilTitle));
       }
       if (hindiTitleColIdx && (songData.hindiTitle !== undefined || songData.devanagariTitle !== undefined)) {
-        sheet.getRange(targetRow, hindiTitleColIdx).setValue(hindiTitle);
+        sheet.getRange(targetRow, hindiTitleColIdx).setValue(SanitizeHelper.sanitizeSheetInput(hindiTitle));
       }
       if (tamilColIdx && songData.tamilLyrics !== undefined) {
-        sheet.getRange(targetRow, tamilColIdx).setValue(tamilLyrics);
+        sheet.getRange(targetRow, tamilColIdx).setValue(SanitizeHelper.sanitizeSheetInput(tamilLyrics));
       }
       if (englishColIdx && songData.englishLyrics !== undefined) {
-        sheet.getRange(targetRow, englishColIdx).setValue(englishLyrics);
+        sheet.getRange(targetRow, englishColIdx).setValue(SanitizeHelper.sanitizeSheetInput(englishLyrics));
       }
       if (devanagariColIdx && (songData.devanagariLyrics !== undefined || songData.hindiLyrics !== undefined)) {
-        sheet.getRange(targetRow, devanagariColIdx).setValue(devanagariLyrics);
+        sheet.getRange(targetRow, devanagariColIdx).setValue(SanitizeHelper.sanitizeSheetInput(devanagariLyrics));
       }
 
       // Record Updated At and Updated By

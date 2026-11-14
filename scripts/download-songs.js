@@ -12,12 +12,43 @@ const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1fnXOKgH3jBPabwpod7-kCdZNa
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv`;
 const XLSX_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=xlsx`;
 
-function fetchUrl(url) {
+const ALLOWED_FETCH_HOSTS = [
+  'docs.google.com',
+  'drive.google.com'
+];
+
+function isTrustedGoogleHost(hostname) {
+  if (!hostname) return false;
+  const host = hostname.toLowerCase();
+  return (
+    ALLOWED_FETCH_HOSTS.includes(host) ||
+    host.endsWith('.google.com') ||
+    host.endsWith('.googleusercontent.com')
+  );
+}
+
+function fetchUrl(url, redirectCount = 0) {
   return new Promise((resolve, reject) => {
-    const client = url.startsWith('https') ? https : http;
-    client.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+    if (redirectCount > 5) {
+      return reject(new Error('Too many redirects while fetching Google Sheet.'));
+    }
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(url);
+    } catch (err) {
+      return reject(new Error(`Invalid URL: ${url}`));
+    }
+    if (parsedUrl.protocol !== 'https:') {
+      return reject(new Error(`Refusing insecure non-HTTPS URL: ${url}`));
+    }
+    if (!isTrustedGoogleHost(parsedUrl.hostname)) {
+      return reject(new Error(`Refusing untrusted redirect host: ${parsedUrl.hostname}`));
+    }
+
+    const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        return fetchUrl(res.headers.location).then(resolve).catch(reject);
+        const nextUrl = new URL(res.headers.location, url).toString();
+        return fetchUrl(nextUrl, redirectCount + 1).then(resolve).catch(reject);
       }
       if (res.statusCode !== 200) {
         return reject(new Error(`Failed to fetch ${url}: Status ${res.statusCode}`));
@@ -25,7 +56,11 @@ function fetchUrl(url) {
       const chunks = [];
       res.on('data', (c) => chunks.push(c));
       res.on('end', () => resolve(Buffer.concat(chunks)));
-    }).on('error', reject);
+    });
+    req.on('timeout', () => {
+      req.destroy(new Error(`Request timed out for ${url}`));
+    });
+    req.on('error', reject);
   });
 }
 

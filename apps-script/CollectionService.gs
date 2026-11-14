@@ -101,7 +101,7 @@ var CollectionService = {
       for (var c = 0; c < maxCol; c++) newRow[c] = '';
 
       newRow[headerMap['collection id'] - 1] = collectionId;
-      newRow[headerMap['collection name'] - 1] = cleanName;
+      newRow[headerMap['collection name'] - 1] = SanitizeHelper.sanitizeSheetInput(cleanName);
       newRow[headerMap['user email'] - 1] = userEmail;
       newRow[headerMap['created date'] - 1] = createdDate;
       newRow[headerMap['created timestamp'] - 1] = createdTimestamp;
@@ -344,7 +344,10 @@ var CollectionService = {
         throw new Error('Collection not found.');
       }
 
-      sheet.getRange(targetRow, colName).setValue(cleanName);
+      if (cleanName.length > CONFIG.MAX_COLLECTION_NAME_LENGTH) {
+        throw new Error('Collection name exceeds maximum length of ' + CONFIG.MAX_COLLECTION_NAME_LENGTH + ' characters.');
+      }
+      sheet.getRange(targetRow, colName).setValue(SanitizeHelper.sanitizeSheetInput(cleanName));
       sheet.getRange(targetRow, colSongs).setValue(songIdsJson);
       sheet.getRange(targetRow, colCount).setValue(cleanSongIds.length);
 
